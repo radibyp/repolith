@@ -49,7 +49,7 @@ const nextConfig: NextConfig = {
 				hostname: "repository-images.githubusercontent.com",
 			},
 			{ protocol: "https", hostname: "repolith.my.id" },
-			{ protocol: "https", hostname: "images.better-auth.com" },
+			{ protocol: "https", hostname: "images.repolith.my.id" },
 		],
 	},
 	async headers() {
