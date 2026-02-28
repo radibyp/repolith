@@ -3397,6 +3397,13 @@ export async function POST(req: Request) {
 	}
 
 	try {
+		const streamId = conversationId ? generateId() : null;
+
+		// Persist the new stream ID so the GET /stream endpoint can find it
+		if (conversationId && streamId) {
+			await updateActiveStreamId(conversationId, streamId);
+		}
+
 		const result = streamText({
 			model: createOpenRouter({ apiKey })(modelId),
 			system: systemPrompt,
@@ -3409,6 +3416,18 @@ export async function POST(req: Request) {
 
 		return result.toUIMessageStreamResponse({
 			sendReasoning: true,
+			// Feed the SSE stream into the resumable stream store so that
+			// GET /api/ai/ghost/[id]/stream can reconnect to it.
+			...(streamId
+				? {
+						consumeSseStream: ({ stream: sseStream }) => {
+							streamContext.createNewResumableStream(
+								streamId,
+								() => sseStream,
+							);
+						},
+					}
+				: {}),
 		});
 	} catch (e: unknown) {
 		const message = e instanceof Error ? e.message : "AI request failed";
