@@ -32,8 +32,8 @@ export const maxDuration = 300;
 // ─── Model Config ───────────────────────────────────────────────────────────
 // Central config for "auto" mode. Swap models here — no other changes needed.
 const GHOST_MODELS = {
-	default: process.env.GHOST_MODEL || "moonshotai/kimi-k2.5",
-	mergeConflict: process.env.GHOST_MERGE_MODEL || "google/gemini-2.5-pro-preview",
+	default: process.env.GHOST_MODEL || "qwen/qwen3-coder:free",
+	mergeConflict: process.env.GHOST_MERGE_MODEL || "z-ai/glm-4.5-air:free",
 } as const;
 
 type GhostTaskType = "default" | "mergeConflict";
@@ -3406,55 +3406,6 @@ export async function POST(req: Request) {
 			stopWhen: stepCountIs(50),
 			onError() {},
 		});
-
-		if (conversationId) {
-			const convId = conversationId;
-			return result.toUIMessageStreamResponse({
-				sendReasoning: true,
-				originalMessages: messages,
-				generateMessageId: generateId,
-				async consumeSseStream({ stream }) {
-					const streamId = generateId();
-					await streamContext.createNewResumableStream(
-						streamId,
-						() => stream,
-					);
-					await updateActiveStreamId(convId, streamId).catch(
-						() => {},
-					);
-				},
-				onFinish: async ({ messages: finishedMessages }) => {
-					try {
-						// Persist all messages server-side with full parts
-						const toSave = finishedMessages.map((m) => ({
-							id: m.id,
-							role: m.role,
-							content:
-								m.parts
-									?.filter(
-										(
-											p,
-										): p is Extract<
-											typeof p,
-											{
-												type: "text";
-											}
-										> =>
-											p.type ===
-											"text",
-									)
-									.map((p) => p.text)
-									.join("") || "",
-							partsJson: JSON.stringify(m.parts),
-						}));
-						await saveMessagesToDb(convId, toSave);
-					} catch {
-						// Best-effort persistence
-					}
-					await updateActiveStreamId(convId, null).catch(() => {});
-				},
-			});
-		}
 
 		return result.toUIMessageStreamResponse({
 			sendReasoning: true,
