@@ -76,7 +76,7 @@ export function ExtensionInstallDialog({
                                     Install Extension
                                 </DialogTitle>
                                 <DialogDescription className="text-[11px] font-mono text-muted-foreground/50 mt-0.5">
-                                    Redirect GitHub to Better Hub automatically
+                                    Redirect GitHub to Repolith automatically
                                 </DialogDescription>
                             </div>
                         </div>
