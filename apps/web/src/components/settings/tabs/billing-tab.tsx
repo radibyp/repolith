@@ -115,8 +115,10 @@ export function BillingTab({ settings, onNavigate }: BillingTabProps) {
 		queryKey: ["billing-subscriptions"],
 		queryFn: async () => {
 			try {
-				const res = await authClient.subscription.list({});
-				return res.data ?? [];
+				const res = await fetch("/api/auth/subscription/list");
+				if (!res.ok) return [];
+				const data = await res.json();
+				return Array.isArray(data) ? data : [];
 			} catch {
 				// Stripe plugin not loaded (no STRIPE_SECRET_KEY) — endpoint doesn't exist
 				return [];
@@ -175,6 +177,8 @@ export function BillingTab({ settings, onNavigate }: BillingTabProps) {
 	const [limitDialogOpen, setLimitDialogOpen] = useState(false);
 	const [limitEnabled, setLimitEnabled] = useState(false);
 	const [limitAmount, setLimitAmount] = useState("10.00");
+	const [gatewayDialogOpen, setGatewayDialogOpen] = useState(false);
+	const [selectedGateway, setSelectedGateway] = useState<PaymentGateway>("polar");
 
 	function openLimitDialog() {
 		const cap = spendingLimit?.monthlyCapUsd;
@@ -252,9 +256,6 @@ export function BillingTab({ settings, onNavigate }: BillingTabProps) {
 			: null;
 
 	const hasByok = settings.useOwnApiKey && !!settings.openrouterApiKey;
-
-	const [gatewayDialogOpen, setGatewayDialogOpen] = useState(false);
-	const [selectedGateway, setSelectedGateway] = useState<PaymentGateway>("polar");
 
 	async function handleSubscribe() {
 		try {
