@@ -4736,7 +4736,7 @@ export async function invalidateRepoDiscussionsCache(
 const ISSUES_PAGE_GRAPHQL = `
 	query($owner: String!, $repo: String!) {
 		repository(owner: $owner, name: $repo) {
-			openIssues: issues(states: [OPEN], first: 50, orderBy: {field: UPDATED_AT, direction: DESC}) {
+			openIssues: issues(states: [OPEN], first: 50, orderBy: {field: CREATED_AT, direction: DESC}) {
 				totalCount
 				nodes {
 					databaseId
@@ -4765,7 +4765,7 @@ const ISSUES_PAGE_GRAPHQL = `
 					}
 				}
 			}
-			closedIssues: issues(states: [CLOSED], first: 50, orderBy: {field: UPDATED_AT, direction: DESC}) {
+			closedIssues: issues(states: [CLOSED], first: 50, orderBy: {field: CREATED_AT, direction: DESC}) {
 				totalCount
 				nodes {
 					databaseId
@@ -5180,6 +5180,7 @@ const PR_NODE_FRAGMENT = `
 	mergedAt
 	headRefName
 	headRefOid
+	headRepository { name owner { login } }
 	baseRefName
 	reviewRequests(first: 10) {
 		nodes { requestedReviewer { ... on User { login avatarUrl } } }
@@ -5236,6 +5237,11 @@ function mapGraphQLPRNode(pr: Record<string, unknown>) {
         labels,
         merged_at: (pr.mergedAt as string) ?? null,
         head: { ref: pr.headRefName as string, sha: pr.headRefOid as string },
+        head_repo_owner:
+            (pr.headRepository as { owner: { login: string } } | null)?.owner
+                ?.login ?? null,
+        head_repo_name:
+            (pr.headRepository as { name: string } | null)?.name ?? null,
         base: { ref: pr.baseRefName as string },
         requested_reviewers: reviewRequests,
         assignees,
