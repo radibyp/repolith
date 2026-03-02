@@ -29,7 +29,11 @@ interface PRHeaderProps {
 	deletions: number;
 	changedFiles: number;
 	labels: Array<{ name?: string; color?: string }>;
-	reviewStatuses?: Array<{ login: string; avatar_url: string; state: string }>;
+	reviewStatuses?: Array<{
+		login: string;
+		avatar_url: string;
+		state: string;
+	}>;
 	checkStatus?: CheckStatus;
 	actions?: React.ReactNode;
 	owner: string;
@@ -135,7 +139,16 @@ export function PRHeader({
 						href={headBranchHref}
 						className="hover:text-info transition-colors hover:underline"
 					>
-						{headBranch}
+						{headRepoOwner && headRepoOwner !== owner ? (
+							<>
+								<span className="text-muted-foreground/40">
+									{headRepoOwner}:
+								</span>
+								{headBranch}
+							</>
+						) : (
+							headBranch
+						)}
 					</Link>
 					<ArrowRight className="w-2.5 h-2.5 text-muted-foreground" />
 					<EditableBaseBranch

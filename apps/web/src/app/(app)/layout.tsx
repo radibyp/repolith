@@ -28,15 +28,27 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 		return redirect(redirectTo);
 	}
 
-	const notifications = (await getNotifications(20)) as NotificationItem[];
+	let notifications: NotificationItem[] = [];
+	try {
+		notifications = (await getNotifications(20)) as NotificationItem[];
+	} catch {
+		// Swallow rate-limit / network errors so the layout can still render and show the onboarding experience.
+		// Individual pages will throw their own errors caught by errors.tsx
+	}
 
 	const onboardingDone = session?.user?.onboardingDone ?? false;
-	const [initialStarredAuth, initialStarredHub] = onboardingDone
-		? [false, false]
-		: await Promise.all([
+	let initialStarredAuth = false;
+	let initialStarredHub = false;
+	if (!onboardingDone) {
+		try {
+			[initialStarredAuth, initialStarredHub] = await Promise.all([
 				checkIsStarred("better-auth", "better-auth"),
 				checkIsStarred("better-auth", "repolith"),
 			]);
+		} catch {
+			// Swallow errors so the onboarding can still render, just with unstarred state.
+		}
+	}
 
 	const freshTabId = crypto.randomUUID();
 	const initialTabState: GhostTabState = {

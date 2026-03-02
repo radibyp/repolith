@@ -76,7 +76,10 @@ export async function generateMetadata({
 		description: bundle.pr.body
 			? bundle.pr.body.slice(0, 200)
 			: `Pull request #${pullNumber} on ${owner}/${repo}`,
-		openGraph: { title: `${bundle.pr.title} · PR #${pullNumber}`, ...ogImages(ogUrl) },
+		openGraph: {
+			title: `${bundle.pr.title} · PR #${pullNumber}`,
+			...ogImages(ogUrl),
+		},
 		twitter: { card: "summary_large_image", ...ogImages(ogUrl) },
 	};
 }
@@ -444,6 +447,8 @@ export default async function PRDetailPage({
 							pullNumber={pullNumber}
 							baseBranch={pr.base.ref}
 							headBranch={pr.head.ref}
+							headRepoOwner={pr.head_repo_owner}
+							headRepoName={pr.head_repo_name}
 						/>
 					) : undefined
 				}

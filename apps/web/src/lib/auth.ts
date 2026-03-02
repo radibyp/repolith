@@ -10,129 +10,170 @@ import { cache } from "react";
 import { dash, sentinel } from "@better-auth/infra";
 import { createHash } from "@better-auth/utils/hash";
 import { admin, oAuthProxy } from "better-auth/plugins";
+import { stripe } from "@better-auth/stripe";
+import { getStripeClient, isStripeEnabled } from "./billing/stripe";
+import { grantSignupCredits } from "./billing/credit";
 import { patSignIn } from "./auth-plugins/pat-signin";
 
 async function getOctokitUser(token: string) {
-    const cached = await redis.get<
-        ReturnType<(typeof octokit)["users"]["getAuthenticated"]>
-    >(`github_user:${token}`);
-    if (cached) return cached;
-    const octokit = new Octokit({ auth: token });
-    const githubUser = await octokit.users.getAuthenticated();
-    const hash = await createHash("SHA-256", "base64").digest(token);
-    waitUntil(
-        redis.set(`github_user:${hash}`, JSON.stringify(githubUser.data), {
-            ex: 3600,
-        }),
-    );
-    return githubUser;
+	const cached = await redis.get<ReturnType<(typeof octokit)["users"]["getAuthenticated"]>>(
+		`github_user:${token}`,
+	);
+	if (cached) return cached;
+	const octokit = new Octokit({ auth: token });
+	const githubUser = await octokit.users.getAuthenticated();
+	const hash = await createHash("SHA-256", "base64").digest(token);
+	waitUntil(
+		redis.set(`github_user:${hash}`, JSON.stringify(githubUser.data), {
+			ex: 3600,
+		}),
+	);
+	return githubUser;
 }
 
 export const auth = betterAuth({
-    database: prismaAdapter(prisma, {
-        provider: "postgresql",
-    }),
-    plugins: [
-        dash({
-            activityTracking: {
-                enabled: true,
-            },
-        }),
-        admin(),
-        patSignIn(),
-        sentinel(),
-        ...(process.env.VERCEL
-            ? [oAuthProxy({ productionURL: "https://www.repolith.my.id" })]
-            : []),
-    ],
-    user: {
-        additionalFields: {
-            githubPat: {
-                type: "string",
-                required: false,
-            },
-            onboardingDone: {
-                type: "boolean",
-                required: false,
-            },
-        },
-        deleteUser: {
-            enabled: true,
-        },
-    },
-    account: {
-        encryptOAuthTokens: true,
-        //cache the account in the cookie
-        storeAccountCookie: true,
-        //to update scopes
-        updateAccountOnSignIn: true,
-    },
-    socialProviders: {
-        github: {
-            clientId: process.env.GITHUB_CLIENT_ID!,
-            clientSecret: process.env.GITHUB_CLIENT_SECRET!,
-            // Minimal default — the sign-in UI lets users opt into more
-            scope: ["read:user", "user:email", "public_repo"],
-            async mapProfileToUser(profile) {
-                return {
-                    githubLogin: profile.login,
-                };
-            },
-        },
-    },
-    session: {
-        cookieCache: {
-            enabled: true,
-            maxAge: 60 * 60 * 24 * 7,
-        },
-    },
-    trustedOrigins: [
-        // Production
-        "https://www.repolith.my.id",
-        // Vercel preview
-        "https://repolith-*-better-auth.vercel.app",
-        // Beta socialProviders
-        "https://beta.repolith.my.id",
-    ],
+	database: prismaAdapter(prisma, {
+		provider: "postgresql",
+	}),
+	plugins: [
+		dash({
+			activityTracking: {
+				enabled: true,
+			},
+		}),
+		sentinel(),
+		admin(),
+		patSignIn(),
+		...(isStripeEnabled
+			? [
+					stripe({
+						stripeClient: getStripeClient(),
+						stripeWebhookSecret:
+							process.env.STRIPE_WEBHOOK_SECRET!,
+						createCustomerOnSignUp: true,
+						onCustomerCreate: async ({ user }) => {
+							await grantSignupCredits(user.id);
+						},
+						subscription: {
+							enabled: true,
+							plans: [
+								{
+									name: "base",
+									priceId: process.env
+										.STRIPE_BASE_PRICE_ID!,
+									lineItems: [
+										{
+											price: process
+												.env
+												.STRIPE_METERED_PRICE_ID!,
+										},
+									],
+								},
+							],
+						},
+					}),
+				]
+			: []),
+		...(process.env.VERCEL
+			? [oAuthProxy({ productionURL: "https://www.better-hub.com" })]
+			: []),
+	],
+	user: {
+		additionalFields: {
+			githubPat: {
+				type: "string",
+				required: false,
+			},
+			onboardingDone: {
+				type: "boolean",
+				required: false,
+			},
+		},
+		deleteUser: {
+			enabled: true,
+		},
+	},
+	account: {
+		encryptOAuthTokens: true,
+		//cache the account in the cookie
+		storeAccountCookie: true,
+		//to update scopes
+		updateAccountOnSignIn: true,
+	},
+	socialProviders: {
+		github: {
+			clientId: process.env.GITHUB_CLIENT_ID!,
+			clientSecret: process.env.GITHUB_CLIENT_SECRET!,
+			// Minimal default — the sign-in UI lets users opt into more
+			scope: ["read:user", "user:email", "public_repo"],
+			async mapProfileToUser(profile) {
+				return {
+					githubLogin: profile.login,
+				};
+			},
+		},
+	},
+	session: {
+		cookieCache: {
+			enabled: true,
+			maxAge: 60 * 60 * 24 * 7,
+		},
+	},
+	trustedOrigins: [
+		// Production
+		"https://www.better-hub.com",
+		// Vercel preview
+		"https://better-hub-*-better-auth.vercel.app",
+		// Beta site
+		"https://beta.better-hub.com",
+	],
 });
 
 export const getServerSession = cache(async () => {
-    try {
-        const { session, account } = await all({
-            async session() {
-                const session = await auth.api.getSession({
-                    headers: await headers(),
-                });
-                return session;
-            },
-            async account() {
-                const session = await auth.api.getAccessToken({
-                    headers: await headers(),
-                    body: { providerId: "github" },
-                });
-                return session;
-            },
-        });
-        if (!session || !account?.accessToken) {
-            return null;
-        }
-        const githubUser = await getOctokitUser(account.accessToken);
-        if (!githubUser?.data) {
-            return null;
-        }
-        return {
-            user: session.user,
-            session,
-            githubUser: {
-                ...githubUser.data,
-                accessToken: account.accessToken,
-            },
-        };
-    } catch {
-        return null;
-    }
+	try {
+		const { session, account } = await all({
+			async session() {
+				const session = await auth.api.getSession({
+					headers: await headers(),
+				});
+				return session;
+			},
+			async account() {
+				const session = await auth.api.getAccessToken({
+					headers: await headers(),
+					body: { providerId: "github" },
+				});
+				return session;
+			},
+		});
+		if (!session || !account?.accessToken) {
+			return null;
+		}
+		let githubUserData: Record<string, unknown> | null = null;
+		try {
+			const githubUser = await getOctokitUser(account.accessToken);
+			githubUserData = githubUser?.data ?? null;
+		} catch {
+			// GitHub API may be rate-limited; don't treat as unauthenticated.
+		}
+		if (!githubUserData) {
+			return {
+				user: session.user,
+				session,
+				githubUser: { accessToken: account.accessToken } as any,
+			};
+		}
+		return {
+			user: session.user,
+			session,
+			githubUser: {
+				...githubUserData,
+				accessToken: account.accessToken,
+			},
+		};
+	} catch {
+		return null;
+	}
 });
 
-export type $Session = NonNullable<
-    Awaited<ReturnType<typeof getServerSession>>
->;
+export type $Session = NonNullable<Awaited<ReturnType<typeof getServerSession>>>;
