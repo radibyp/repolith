@@ -4,7 +4,7 @@ import {
 	cloudflare,
 	ember,
 	forest,
-	betterAuthTheme,
+	KaltThemes,
 	mintlify,
 	noir,
 	nordWave,
@@ -16,11 +16,12 @@ import {
 	vesper,
 	zinc,
 	catppuccin,
+	rosePine,
 	LEGACY_THEME_MAP,
 } from "./themes";
 
 const themes: ThemeDefinition[] = [
-	betterAuthTheme,
+	KaltThemes,
 	vercel,
 	cloudflare,
 	supabase,
@@ -36,13 +37,14 @@ const themes: ThemeDefinition[] = [
 	noir,
 	forest,
 	catppuccin,
+	rosePine,
 ];
 
 export type { ThemeColors, ThemeDefinition, ThemeVariant, ShikiTheme };
 
 export const STORAGE_KEY = "color-theme";
 export const MODE_KEY = "color-mode";
-export const DEFAULT_THEME_ID = "better-auth";
+export const DEFAULT_THEME_ID = "kalt";
 export const DEFAULT_MODE: "dark" | "light" = "dark";
 
 const themeMap = new Map(themes.map((t) => [t.id, t]));
@@ -71,7 +73,7 @@ export function applyTheme(themeId: string, mode: "dark" | "light"): void {
 	const theme = getTheme(themeId);
 	const variant = theme?.[mode];
 
-	const hubDark = betterAuthTheme.dark;
+	const hubDark = KaltThemes.dark;
 	const allKeys = Object.keys(hubDark.colors) as (keyof ThemeColors)[];
 
 	if (!variant || (themeId === DEFAULT_THEME_ID && mode === DEFAULT_MODE)) {
