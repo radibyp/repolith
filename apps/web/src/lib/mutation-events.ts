@@ -1,5 +1,7 @@
 // ── PR Events ─────────────────────────────────────────────────
 
+import { markPRReadyForReview } from "@/app/(app)/repos/[owner]/[repo]/pulls/pr-actions";
+
 export type PRMergedEvent = {
 	type: "pr:merged";
 	owner: string;
@@ -20,6 +22,12 @@ export type PRReopenedEvent = {
 };
 export type PRConvertedToDraftEvent = {
 	type: "pr:converted_to_draft";
+	owner: string;
+	repo: string;
+	number: number;
+};
+export type PRReadyForReviewEvent = {
+	type: "pr:ready_for_review";
 	owner: string;
 	repo: string;
 	number: number;
@@ -223,6 +231,7 @@ export type MutationEvent =
 	| PRClosedEvent
 	| PRReopenedEvent
 	| PRConvertedToDraftEvent
+	| PRReadyForReviewEvent
 	| PRCommentedEvent
 	| PRReviewedEvent
 	| PRRenamedEvent
