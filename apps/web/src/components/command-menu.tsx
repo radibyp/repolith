@@ -67,6 +67,13 @@ interface SearchRepo {
 	} | null;
 }
 
+interface SearchUser {
+	id: number;
+	login: string;
+	avatar_url: string;
+	type: string;
+}
+
 interface AccountInfo {
 	id: string;
 	login: string;
@@ -147,7 +154,10 @@ export function CommandMenu() {
 	const [userReposLoaded, setUserReposLoaded] = useState(false);
 	const [githubResults, setGithubResults] = useState<SearchRepo[]>([]);
 	const [githubLoading, setGithubLoading] = useState(false);
+	const [userResults, setUserResults] = useState<SearchUser[]>([]);
+	const [usersLoading, setUsersLoading] = useState(false);
 	const debounceRef = useRef<ReturnType<typeof setTimeout>>(null);
+	const searchRequestIdRef = useRef(0);
 
 	// Accounts state
 	const [accountsData, setAccountsData] = useState<AccountsData | null>(null);
@@ -452,7 +462,7 @@ export function CommandMenu() {
 		};
 		document.addEventListener("keydown", down);
 		return () => document.removeEventListener("keydown", down);
-	}, [open]);
+	}, [open, mode]);
 
 	useEffect(() => {
 		if (open) {
@@ -486,6 +496,9 @@ export function CommandMenu() {
 				setSelectedIndex(0);
 				setGithubResults([]);
 				setGithubLoading(false);
+				setUserResults([]);
+				setUsersLoading(false);
+				searchRequestIdRef.current += 1;
 				setMode("commands");
 				setAddingAccount(false);
 				setPatInput("");
@@ -496,65 +509,152 @@ export function CommandMenu() {
 		}
 	}, [open]);
 
-	// Debounced GitHub search only in search mode
+	const { isUserOnlyQuery, normalizedSearchQuery, hasSearchQuery } = useMemo(() => {
+		const rawSearchQuery = search.trim();
+		const userOnly = mode === "search" && rawSearchQuery.startsWith("@");
+		const normalized = userOnly ? rawSearchQuery.slice(1).trim() : rawSearchQuery;
+		return {
+			isUserOnlyQuery: userOnly,
+			normalizedSearchQuery: normalized,
+			hasSearchQuery: mode === "search" && normalized.length > 0,
+		};
+	}, [search, mode]);
+
+	// Debounced search (repos + users) only in search mode
 	useEffect(() => {
 		if (!open || mode !== "search") return;
 		if (debounceRef.current) clearTimeout(debounceRef.current);
+		const requestId = ++searchRequestIdRef.current;
 
-		const q = search.trim();
-		if (!q) {
+		if (!normalizedSearchQuery) {
 			setGithubResults([]);
 			setGithubLoading(false);
+			setUserResults([]);
+			setUsersLoading(false);
 			return;
 		}
 
-		setGithubLoading(true);
+		if (isUserOnlyQuery) {
+			setGithubResults([]);
+			setGithubLoading(false);
+		} else {
+			setGithubLoading(true);
+		}
+		setUsersLoading(true);
+
 		debounceRef.current = setTimeout(async () => {
 			try {
-				const params = new URLSearchParams({ q, per_page: "10" });
-				const res = await fetch(`/api/search-repos?${params}`);
-				if (res.ok) {
-					const data = await res.json();
-					const items = (data.items ?? []).map(
-						(r: {
-							id: number;
-							full_name: string;
-							description?: string | null;
-							language?: string | null;
-							stargazers_count?: number;
-							owner?: {
+				const repoPromise = isUserOnlyQuery
+					? Promise.resolve<SearchRepo[]>([])
+					: (async () => {
+							try {
+								const params = new URLSearchParams({
+									q: normalizedSearchQuery,
+									per_page: "10",
+								});
+								const res = await fetch(
+									`/api/search-repos?${params}`,
+								);
+								if (!res.ok) return [];
+								const data = await res.json();
+								return (data.items ?? []).map(
+									(r: {
+										id: number;
+										full_name: string;
+										description?:
+											| string
+											| null;
+										language?:
+											| string
+											| null;
+										stargazers_count?: number;
+										owner?: {
+											login: string;
+											avatar_url: string;
+										} | null;
+									}) => ({
+										id: r.id,
+										full_name: r.full_name,
+										description:
+											r.description ??
+											null,
+										language:
+											r.language ??
+											null,
+										stargazers_count:
+											r.stargazers_count ??
+											0,
+										owner: r.owner
+											? {
+													login: r
+														.owner
+														.login,
+													avatar_url: r
+														.owner
+														.avatar_url,
+												}
+											: null,
+									}),
+								);
+							} catch {
+								return [];
+							}
+						})();
+
+				const userPromise = (async () => {
+					try {
+						const params = new URLSearchParams({
+							q: normalizedSearchQuery,
+							per_page: "10",
+						});
+						const res = await fetch(
+							`/api/search-users?${params}`,
+						);
+						if (!res.ok) return [];
+						const data = await res.json();
+						return (data.items ?? []).map(
+							(u: {
+								id: number;
 								login: string;
 								avatar_url: string;
-							} | null;
-						}) => ({
-							id: r.id,
-							full_name: r.full_name,
-							description: r.description ?? null,
-							language: r.language ?? null,
-							stargazers_count: r.stargazers_count ?? 0,
-							owner: r.owner
-								? {
-										login: r.owner
-											.login,
-										avatar_url: r.owner
-											.avatar_url,
-									}
-								: null,
-						}),
-					);
-					setGithubResults(items);
+								type?: string;
+							}) => ({
+								id: u.id,
+								login: u.login,
+								avatar_url: u.avatar_url,
+								type: u.type ?? "User",
+							}),
+						);
+					} catch {
+						return [];
+					}
+				})();
+
+				const [repoItems, userItems] = await Promise.all([
+					repoPromise,
+					userPromise,
+				]);
+				if (searchRequestIdRef.current !== requestId) return;
+				if (!isUserOnlyQuery) {
+					setGithubResults(repoItems);
 				}
+				setUserResults(userItems);
 			} catch {
-				// silent
+				if (searchRequestIdRef.current !== requestId) return;
+				setGithubResults([]);
+				setUserResults([]);
 			} finally {
-				setGithubLoading(false);
+				if (searchRequestIdRef.current === requestId) {
+					setGithubLoading(false);
+					setUsersLoading(false);
+				}
 			}
 		}, 150);
 
 		return () => {
 			if (debounceRef.current) clearTimeout(debounceRef.current);
 		};
-	}, [search, open, mode]);
+	}, [open, mode, normalizedSearchQuery, isUserOnlyQuery]);
 
 	const switchMode = useCallback((newMode: Mode) => {
 		setMode(newMode);
@@ -562,6 +662,9 @@ export function CommandMenu() {
 		setSelectedIndex(0);
 		setGithubResults([]);
 		setGithubLoading(false);
+		setUserResults([]);
+		setUsersLoading(false);
+		searchRequestIdRef.current += 1;
 	}, []);
 
 	function derivePinTitle(p: string, base: string, owner: string, repo: string): string {
@@ -730,8 +833,8 @@ export function CommandMenu() {
 					]
 				: []),
 			{
-				name: "Search Repos",
-				description: "Find repositories",
+				name: "Search GitHub",
+				description: "Find repositories and users",
 				keywords: ["find", "lookup", "navigate", "go to", "open repo"],
 				action: () => switchMode("search"),
 				icon: Search,
@@ -907,8 +1010,8 @@ export function CommandMenu() {
 			// Dashboard / other pages
 			items.push({
 				id: "suggest-search",
-				name: "Search Repos",
-				description: "Find repositories",
+				name: "Search GitHub",
+				description: "Find repositories and users",
 				icon: Search,
 				action: () => switchMode("search"),
 				keepOpen: true,
@@ -964,11 +1067,7 @@ export function CommandMenu() {
 			{ name: "Overview", href: base, icon: Eye },
 			{ name: "Code", href: `${base}/code`, icon: Code },
 			{ name: "Commits", href: `${base}/commits`, icon: GitCommit },
-			{
-				name: "Pull Requests",
-				href: `${base}/pulls`,
-				icon: GitPullRequest,
-			},
+			{ name: "Pull Requests", href: `${base}/pulls`, icon: GitPullRequest },
 			{ name: "Issues", href: `${base}/issues`, icon: CircleDot },
 			{ name: "Actions", href: `${base}/actions`, icon: Play },
 			{ name: "Security", href: `${base}/security`, icon: Shield },
@@ -1044,8 +1143,8 @@ export function CommandMenu() {
 
 	// --- Search mode items ---
 	const filteredUserRepos = useMemo(() => {
-		if (mode !== "search" || !search.trim()) return [];
-		const s = search.toLowerCase();
+		if (mode !== "search" || !normalizedSearchQuery || isUserOnlyQuery) return [];
+		const s = normalizedSearchQuery.toLowerCase();
 		return userReposRef.current
 			.filter(
 				(r) =>
@@ -1053,23 +1152,32 @@ export function CommandMenu() {
 					(r.description && r.description.toLowerCase().includes(s)),
 			)
 			.slice(0, 8);
-	}, [search, mode, userReposLoaded]); // eslint-disable-line react-hooks/exhaustive-deps
+	}, [mode, userReposLoaded, normalizedSearchQuery, isUserOnlyQuery]); // eslint-disable-line react-hooks/exhaustive-deps
 
 	const dedupedGithubResults = useMemo(() => {
-		if (mode !== "search" || !search.trim()) return [];
-		const userRepoNames = new Set(filteredUserRepos.map((r) => r.full_name));
-		return githubResults.filter((r) => !userRepoNames.has(r.full_name)).slice(0, 8);
-	}, [search, mode, githubResults, filteredUserRepos]);
+		if (mode !== "search" || !normalizedSearchQuery || isUserOnlyQuery) return [];
+		const userRepoNames = new Set(
+			filteredUserRepos.map((r) => r.full_name.toLowerCase()),
+		);
+		return githubResults
+			.filter((r) => !userRepoNames.has(r.full_name.toLowerCase()))
+			.slice(0, 8);
+	}, [mode, normalizedSearchQuery, githubResults, filteredUserRepos, isUserOnlyQuery]);
+
+	const filteredUsers = useMemo(() => {
+		if (mode !== "search" || !normalizedSearchQuery) return [];
+		return userResults.slice(0, 8);
+	}, [mode, normalizedSearchQuery, userResults]);
 
 	// Top repos when search is empty in search mode
 	const topUserRepos = useMemo(() => {
-		if (mode !== "search" || search.trim()) return [];
+		if (mode !== "search" || normalizedSearchQuery) return [];
 		return userReposRef.current.slice(0, 10);
-	}, [mode, search, userReposLoaded]); // eslint-disable-line react-hooks/exhaustive-deps
+	}, [mode, normalizedSearchQuery, userReposLoaded]); // eslint-disable-line react-hooks/exhaustive-deps
 
 	const searchItems = useMemo(() => {
 		const items: { id: string; action: () => void }[] = [];
-		if (!search.trim()) {
+		if (!normalizedSearchQuery) {
 			topUserRepos.forEach((r) =>
 				items.push({
 					id: `top-repo-${r.id}`,
@@ -1077,21 +1185,37 @@ export function CommandMenu() {
 				}),
 			);
 		} else {
-			filteredUserRepos.forEach((r) =>
+			filteredUsers.forEach((user) =>
 				items.push({
-					id: `user-repo-${r.id}`,
-					action: () => router.push(`/${r.full_name}`),
+					id: `user-${user.id}`,
+					action: () => router.push(`/${user.login}`),
 				}),
 			);
-			dedupedGithubResults.forEach((r) =>
-				items.push({
-					id: `gh-repo-${r.id}`,
-					action: () => router.push(`/${r.full_name}`),
-				}),
-			);
+			if (!isUserOnlyQuery) {
+				filteredUserRepos.forEach((r) =>
+					items.push({
+						id: `user-repo-${r.id}`,
+						action: () => router.push(`/${r.full_name}`),
+					}),
+				);
+				dedupedGithubResults.forEach((r) =>
+					items.push({
+						id: `gh-repo-${r.id}`,
+						action: () => router.push(`/${r.full_name}`),
+					}),
+				);
+			}
 		}
 		return items;
-	}, [search, topUserRepos, filteredUserRepos, dedupedGithubResults, router]);
+	}, [
+		normalizedSearchQuery,
+		topUserRepos,
+		filteredUsers,
+		isUserOnlyQuery,
+		filteredUserRepos,
+		dedupedGithubResults,
+		router,
+	]);
 
 	// --- Theme mode items ---
 	const { regularThemes, brandedThemes } = useMemo(() => {
@@ -1574,6 +1698,7 @@ export function CommandMenu() {
 								/>
 								<div className="flex items-center gap-1">
 									{(githubLoading ||
+										usersLoading ||
 										fileTreeLoading) && (
 										<Loader2 className="size-3.5 text-muted-foreground animate-spin shrink-0" />
 									)}
@@ -1923,7 +2048,7 @@ export function CommandMenu() {
 									/* Search mode */
 									<>
 										{/* Recent / your repos (when no query) */}
-										{!hasQuery &&
+										{!hasSearchQuery &&
 											topUserRepos.length >
 												0 && (
 												<CommandGroup title="Recent repositories">
@@ -1963,8 +2088,70 @@ export function CommandMenu() {
 												</CommandGroup>
 											)}
 
+										{/* Users */}
+										{hasSearchQuery &&
+											(filteredUsers.length >
+												0 ||
+												usersLoading) && (
+												<CommandGroup
+													title={
+														usersLoading &&
+														filteredUsers.length ===
+															0
+															? "Users (searching...)"
+															: "Users"
+													}
+												>
+													{filteredUsers.map(
+														(
+															user,
+														) => {
+															const idx =
+																getNextIndex();
+															return (
+																<UserItem
+																	key={
+																		user.id
+																	}
+																	user={
+																		user
+																	}
+																	index={
+																		idx
+																	}
+																	selected={
+																		selectedIndex ===
+																		idx
+																	}
+																	onClick={() =>
+																		runCommand(
+																			() =>
+																				router.push(
+																					`/${user.login}`,
+																				),
+																		)
+																	}
+																/>
+															);
+														},
+													)}
+													{usersLoading &&
+														filteredUsers.length ===
+															0 && (
+															<div className="flex items-center gap-3 px-4 py-3 text-sm text-muted-foreground/60">
+																<Loader2 className="size-3.5 animate-spin" />
+																<span className="text-xs">
+																	Searching
+																	users...
+																</span>
+															</div>
+														)}
+												</CommandGroup>
+											)}
+
 										{/* Your Repos (with query) */}
-										{hasQuery &&
+										{hasSearchQuery &&
+											!isUserOnlyQuery &&
 											filteredUserRepos.length >
 												0 && (
 												<CommandGroup title="Your repos">
@@ -2005,7 +2192,8 @@ export function CommandMenu() {
 											)}
 
 										{/* GitHub results */}
-										{hasQuery &&
+										{hasSearchQuery &&
+											!isUserOnlyQuery &&
 											(dedupedGithubResults.length >
 												0 ||
 												githubLoading) && (
@@ -2066,16 +2254,22 @@ export function CommandMenu() {
 											)}
 
 										{/* No results */}
-										{hasQuery &&
-											filteredUserRepos.length ===
+										{hasSearchQuery &&
+											filteredUsers.length ===
 												0 &&
-											dedupedGithubResults.length ===
-												0 &&
-											!githubLoading && (
+											(isUserOnlyQuery ||
+												filteredUserRepos.length ===
+													0) &&
+											(isUserOnlyQuery ||
+												dedupedGithubResults.length ===
+													0) &&
+											!usersLoading &&
+											(isUserOnlyQuery ||
+												!githubLoading) && (
 												<div className="py-8 text-center text-sm text-muted-foreground/70">
-													No
-													results
-													for
+													{isUserOnlyQuery
+														? "No users for "
+														: "No results for "}
 													&quot;
 													{
 														search
@@ -2085,7 +2279,7 @@ export function CommandMenu() {
 											)}
 
 										{/* Empty search mode hint */}
-										{!hasQuery &&
+										{!hasSearchQuery &&
 											topUserRepos.length ===
 												0 && (
 												<div className="py-8 text-center text-sm text-muted-foreground">
@@ -2093,7 +2287,13 @@ export function CommandMenu() {
 													typing
 													to
 													search
-													repositories
+													repositories.
+													Use
+													@
+													to
+													search
+													users
+													only.
 												</div>
 											)}
 									</>
@@ -3267,6 +3467,52 @@ function RepoItem({
 				<ChevronRight className="w-3 h-3 text-foreground/15 opacity-0 group-hover:opacity-100 transition-opacity" />
 			</div>
 		</button>
+	);
+}
+
+function UserItem({
+	user,
+	index,
+	selected,
+	onClick,
+}: {
+	user: SearchUser;
+	index: number;
+	selected: boolean;
+	onClick: () => void;
+}) {
+	const typeLabel = user.type || "User";
+	const [avatarErrored, setAvatarErrored] = useState(false);
+
+	return (
+		<CommandItemButton
+			onClick={onClick}
+			index={index}
+			selected={selected}
+			className="group"
+		>
+			{avatarErrored || !user.avatar_url ? (
+				<div className="w-4 h-4 rounded-full bg-muted/50 shrink-0" />
+			) : (
+				<img
+					src={user.avatar_url}
+					alt={user.login}
+					className="w-4 h-4 rounded-full shrink-0"
+					onError={() => setAvatarErrored(true)}
+				/>
+			)}
+			<div className="flex-1 min-w-0">
+				<span className="text-sm text-foreground font-mono truncate block">
+					@{user.login}
+				</span>
+			</div>
+			<div className="flex items-center gap-2.5 shrink-0">
+				<span className="text-[10px] text-muted-foreground/70 border border-border/40 px-1.5 py-0.5 rounded-sm">
+					{typeLabel}
+				</span>
+				<ChevronRight className="w-3 h-3 text-foreground/15 opacity-0 group-hover:opacity-100 transition-opacity" />
+			</div>
+		</CommandItemButton>
 	);
 }
 
