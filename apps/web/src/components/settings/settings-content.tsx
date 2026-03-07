@@ -1,14 +1,11 @@
 "use client";
 
-import { useState, useRef } from "react";
+import dynamic from "next/dynamic";
+import { useRef, useState, useTransition } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Settings, Bot, CreditCard, User, Code2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { GeneralTab } from "./tabs/general-tab";
-import { AIModelTab } from "./tabs/ai-model-tab";
-import { BillingTab } from "./tabs/billing-tab";
-import { AccountTab } from "./tabs/account-tab";
-import { EditorTab } from "./tabs/editor-tab";
 import type { UserSettings } from "@/lib/user-settings-store";
 import type { GitHubProfile } from "./settings-dialog";
 import { useMutationEvents } from "@/components/shared/mutation-event-provider";
@@ -22,6 +19,41 @@ const TABS = [
 ] as const;
 
 export type TabId = (typeof TABS)[number]["id"];
+
+function TabLoadingFallback() {
+	return (
+		<div className="flex min-h-[20rem] items-center justify-center px-4 py-12">
+			<p className="text-[11px] font-mono text-muted-foreground">
+				Loading section...
+			</p>
+		</div>
+	);
+}
+
+const loadEditorTab = () => import("./tabs/editor-tab").then((mod) => mod.EditorTab);
+const loadAIModelTab = () => import("./tabs/ai-model-tab").then((mod) => mod.AIModelTab);
+const loadBillingTab = () => import("./tabs/billing-tab").then((mod) => mod.BillingTab);
+const loadAccountTab = () => import("./tabs/account-tab").then((mod) => mod.AccountTab);
+
+const EditorTab = dynamic(loadEditorTab, {
+	loading: TabLoadingFallback,
+});
+const AIModelTab = dynamic(loadAIModelTab, {
+	loading: TabLoadingFallback,
+});
+const BillingTab = dynamic(loadBillingTab, {
+	loading: TabLoadingFallback,
+});
+const AccountTab = dynamic(loadAccountTab, {
+	loading: TabLoadingFallback,
+});
+
+const TAB_PRELOADERS: Partial<Record<TabId, () => Promise<unknown>>> = {
+	editor: loadEditorTab,
+	ai: loadAIModelTab,
+	billing: loadBillingTab,
+	account: loadAccountTab,
+};
 
 interface SettingsContentProps {
 	initialSettings: UserSettings;
@@ -40,9 +72,22 @@ export function SettingsContent({
 }: SettingsContentProps) {
 	const [activeTab, setActiveTab] = useState<TabId>(initialTab ?? "general");
 	const [settings, setSettings] = useState(initialSettings);
+	const [isPending, startTransition] = useTransition();
 	const { emit } = useMutationEvents();
 	const queryClient = useQueryClient();
 	const updateSeqRef = useRef(0);
+
+	function preloadTab(tab: TabId) {
+		void TAB_PRELOADERS[tab]?.();
+	}
+
+	function handleTabChange(nextTab: TabId) {
+		if (nextTab === activeTab) return;
+		preloadTab(nextTab);
+		startTransition(() => {
+			setActiveTab(nextTab);
+		});
+	}
 
 	async function handleUpdate(updates: Partial<UserSettings>) {
 		const prev = settings;
@@ -104,7 +149,7 @@ export function SettingsContent({
 	return (
 		<div className="flex flex-col flex-1 min-h-0">
 			{/* Header */}
-			<div className="shrink-0 px-6 pt-6 pb-4">
+			<div className="shrink-0 px-4 pt-4 pb-3 sm:px-6 sm:pt-6 sm:pb-4">
 				<h1 className="text-xl font-medium tracking-tight">Settings</h1>
 				<p className="text-[11px] text-muted-foreground font-mono mt-1">
 					Manage your preferences, AI model configuration, and
@@ -113,11 +158,21 @@ export function SettingsContent({
 			</div>
 
 			{/* Tab bar */}
-			<div className="shrink-0 flex items-center border border-border mx-6 mb-0 overflow-x-auto no-scrollbar">
+			<div
+				role="tablist"
+				aria-label="Settings sections"
+				className="shrink-0 flex items-center border border-border mx-4 mb-0 overflow-x-auto no-scrollbar sm:mx-6"
+			>
 				{TABS.map(({ id, label, icon: Icon }) => (
 					<button
 						key={id}
-						onClick={() => setActiveTab(id)}
+						type="button"
+						role="tab"
+						aria-selected={activeTab === id}
+						onClick={() => handleTabChange(id)}
+						onMouseEnter={() => preloadTab(id)}
+						onFocus={() => preloadTab(id)}
+						onTouchStart={() => preloadTab(id)}
 						className={cn(
 							"flex items-center gap-1.5 px-3 sm:px-4 py-2.5 text-[11px] font-mono uppercase tracking-wider whitespace-nowrap shrink-0 transition-colors cursor-pointer",
 							activeTab === id
@@ -132,7 +187,10 @@ export function SettingsContent({
 			</div>
 
 			{/* Content — only this area scrolls */}
-			<div className="flex-1 min-h-0 overflow-y-auto border border-t-0 border-border mx-6 mb-6">
+			<div
+				aria-busy={isPending}
+				className="flex-1 min-h-0 overflow-y-auto border border-t-0 border-border mx-4 mb-4 sm:mx-6 sm:mb-6"
+			>
 				{activeTab === "general" && (
 					<GeneralTab
 						settings={settings}
@@ -145,7 +203,10 @@ export function SettingsContent({
 					<AIModelTab settings={settings} onUpdate={handleUpdate} />
 				)}
 				{activeTab === "billing" && (
-					<BillingTab settings={settings} onNavigate={setActiveTab} />
+					<BillingTab
+						settings={settings}
+						onNavigate={handleTabChange}
+					/>
 				)}
 				{activeTab === "account" && (
 					<AccountTab
