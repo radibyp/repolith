@@ -545,7 +545,7 @@ function FileHeader({
 	};
 
 	return (
-		<div className="shrink-0 flex items-center gap-2 px-3 py-1.5 border-b border-border bg-card/50">
+		<div className="shrink-0 flex items-center gap-2 px-2 py-1 border-b border-border bg-card/50">
 			<Icon
 				className={cn(
 					"w-3.5 h-3.5 shrink-0",
@@ -561,7 +561,7 @@ function FileHeader({
 				</span>
 			)}
 
-			<div className="flex items-center gap-1 ml-auto shrink-0">
+			<div className="flex items-center gap-0.5 ml-auto shrink-0">
 				<span className="text-[10px] font-mono text-success">
 					+{file.additions}
 				</span>
@@ -571,17 +571,14 @@ function FileHeader({
 
 				<button
 					onClick={copyFilePath}
-					title="Copy file path"
-					className="px-1.5 py-1 rounded transition-colors cursor-pointer text-muted-foreground hover:text-info"
+					title={copiedPath ? "Copied!" : "Copy file path"}
+					className="p-0.5 rounded transition-colors cursor-pointer text-muted-foreground hover:text-info"
 				>
-					<span className="inline-flex items-center gap-1 text-[10px] font-mono">
-						{copiedPath ? (
-							<Check className="w-3.5 h-3.5 text-info" />
-						) : (
-							<Copy className="w-3.5 h-3.5" />
-						)}
-						{copiedPath ? "Copied!" : "Path"}
-					</span>
+					{copiedPath ? (
+						<Check className="w-3.5 h-3.5 text-info" />
+					) : (
+						<Copy className="w-3.5 h-3.5" />
+					)}
 				</button>
 
 				<button
