@@ -3439,27 +3439,23 @@ export async function POST(req: Request) {
 			maxRetries: 4,
 			stopWhen: stepCountIs(50),
 			onError() {},
-		});
-
-		if (userId) {
-			waitUntil(
-				Promise.resolve(result.usage)
-					.then((usage) =>
-						logTokenUsage({
-							userId,
-							provider: "openrouter",
-							modelId,
-							taskType: "ghost",
-							usage,
-							isCustomApiKey,
-							conversationId: conversationId ?? undefined,
-						}),
-					)
-					.catch((e) =>
+			onFinish: async ({ totalUsage }) => {
+				if (!userId) return;
+				waitUntil(
+					logTokenUsage({
+						userId,
+						provider: "openrouter",
+						modelId,
+						taskType: "ghost",
+						usage: totalUsage,
+						isCustomApiKey,
+						conversationId: conversationId ?? undefined,
+					}).catch((e) =>
 						console.error("[billing] logTokenUsage failed:", e),
 					),
-			);
-		}
+				);
+			},
+		});
 
 		if (conversationId) {
 			const convId = conversationId;

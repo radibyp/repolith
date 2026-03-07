@@ -57,6 +57,10 @@ function formatUsd(amount: number): string {
 	return `$${amount.toFixed(2)}`;
 }
 
+function formatCreditUsd(amount: number): string {
+	return `$${amount.toFixed(4)}`;
+}
+
 function formatDate(date: string | Date): string {
 	return new Date(date).toLocaleDateString("en-US", {
 		month: "short",
@@ -584,8 +588,11 @@ export function BillingTab({ settings, onNavigate }: BillingTabProps) {
 				{balance && (
 					<div className="mt-3">
 						<span className="text-lg font-mono tabular-nums">
-							{formatUsd(balance.available)}
+							{formatCreditUsd(balance.available)}
 						</span>
+						<p className="mt-1 text-[10px] text-muted-foreground/50 font-mono">
+							Used {formatCreditUsd(balance.totalUsed)}
+						</p>
 						{balance.nearestExpiry && (
 							<p className="mt-2 text-[10px] text-muted-foreground/50 font-mono">
 								Expires{" "}

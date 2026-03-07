@@ -666,22 +666,21 @@ ${pageContextPrompt}`,
 			}),
 		},
 		stopWhen: stepCountIs(3),
-	});
-
-	waitUntil(
-		Promise.resolve(result.usage)
-			.then((usage) =>
+		onFinish: async ({ totalUsage }) => {
+			waitUntil(
 				logTokenUsage({
 					userId,
 					provider: "openrouter",
 					modelId,
 					taskType: "command",
-					usage,
+					usage: totalUsage,
 					isCustomApiKey,
-				}),
-			)
-			.catch((e) => console.error("[billing] logTokenUsage failed:", e)),
-	);
+				}).catch((e) =>
+					console.error("[billing] logTokenUsage failed:", e),
+				),
+			);
+		},
+	});
 
 	return result.toUIMessageStreamResponse();
 }
