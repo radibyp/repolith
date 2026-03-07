@@ -20,6 +20,9 @@
 			"@/*": ["./src/*"]
 		}
 	},
+	"compilerOptions": {
+		"types": ["bun-types", "node"]
+	},
 	"include": [
 		"next-env.d.ts",
 		"**/*.ts",
