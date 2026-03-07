@@ -23,7 +23,7 @@ export default async function HomePage({
 
 	return (
 		<div
-			className="relative min-h-screen bg-background overflow-x-hidden"
+			className="flex min-h-screen w-full bg-background overflow-hidden"
 			style={
 				{
 					"--background": "#030304",
@@ -36,119 +36,144 @@ export default async function HomePage({
 				} as React.CSSProperties
 			}
 		>
-			{/* Shader — full screen */}
-			<div
-				className="absolute inset-0 overflow-hidden"
-				style={{ background: "var(--shader-bg)" }}
-			>
-				<HalftoneBackground />
-
-				{/* Bottom fade */}
-				<div
-					className="absolute inset-x-0 bottom-0 h-1/3 pointer-events-none z-10"
-					style={{
-						background: "linear-gradient(to top, var(--background) 0%, transparent 100%)",
-					}}
-				/>
-			</div>
-
 			<style>{`
-				html, body { background: #030304; }
-				@keyframes heroFadeUp {
-					from { opacity: 0; transform: translateY(12px); filter: blur(4px); }
+				@keyframes fadeUp {
+					from { opacity: 0; transform: translateY(16px); filter: blur(4px); }
 					to { opacity: 1; transform: translateY(0); filter: blur(0px); }
 				}
-				.hero-in {
+				@keyframes fadeIn {
+					from { opacity: 0; }
+					to { opacity: 1; }
+				}
+				.animate-fade-up {
 					opacity: 0;
-					animation: heroFadeUp 0.6s ease-out forwards;
+					animation: fadeUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+				}
+				.animate-fade-in {
+					opacity: 0;
+					animation: fadeIn 1s ease-out forwards;
 				}
 			`}</style>
 
-			{/* Logo — top left */}
+			{/* Left Panel — Visuals & Branding */}
 			<div
-				className="hero-in absolute top-6 left-2 sm:left-4 z-30 flex items-center gap-1"
-				style={{ animationDelay: "0.2s" }}
+				className="relative hidden lg:flex w-1/2 flex-col justify-between border-r border-[var(--border)] p-10 lg:p-14 xl:p-16"
+				style={{ backgroundColor: "var(--background)" }}
 			>
-				<svg
-					className="size-5"
-					viewBox="0 0 65 65"
-					fill="none"
-					xmlns="http://www.w3.org/2000/svg"
-				>
-					<path d={LOGO_SVG_PATH} fill="url(#paint0_hero)" />
-					<defs>
-						<linearGradient
-							id="paint0_hero"
-							x1="34.5313"
-							y1="9.13989"
-							x2="34.5313"
-							y2="55.8601"
-							gradientUnits="userSpaceOnUse"
-						>
-							<stop stopColor="white" />
-							<stop offset="1" stopColor="#999999" />
-						</linearGradient>
-					</defs>
-				</svg>
-				<span className="text-sm tracking-tight text-foreground">
-					Repolith.
-				</span>
-			</div>
+				{/* Halftone Shader Background */}
+				<div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+					<HalftoneBackground />
+					{/* Gradient fade out at the top to ensure logo is readable */}
+					<div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-[#030304] to-transparent z-10" />
+					{/* Gradient fade out at the bottom for text readability */}
+					<div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-[#030304] via-[#030304]/60 to-transparent z-10" />
+				</div>
 
-			{/* Content */}
-			<div className="relative z-20 min-h-screen flex items-center justify-center px-4 py-20">
-				<div className="w-full max-w-md text-center">
-					{/* Heading */}
+				{/* Header area (Logo) */}
+				<div
+					className="animate-fade-in relative z-20 flex items-center gap-2"
+					style={{ animationDelay: "0.1s" }}
+				>
+					<svg
+						className="size-6 text-white"
+						viewBox="0 0 65 65"
+						fill="none"
+						xmlns="http://www.w3.org/2000/svg"
+					>
+						<path d={LOGO_SVG_PATH} fill="currentColor" />
+					</svg>
+					<span className="text-lg font-medium tracking-tight text-white">
+						Repolith.
+					</span>
+				</div>
+
+				{/* Content area */}
+				<div className="relative z-20 mt-auto">
 					<h1
-						className="hero-in text-3xl sm:text-4xl lg:text-5xl font-medium tracking-tight text-foreground leading-[1.1] mb-2"
-						style={{ animationDelay: "0.4s" }}
+						className="animate-fade-up text-4xl xl:text-5xl font-medium tracking-tight text-white leading-[1.15] mb-4"
+						style={{ animationDelay: "0.3s" }}
 					>
 						Built for Humans.
 						<br />
 						Ready for{" "}
-						<span className="font-mono text-white/80">
+						<span className="font-mono text-white/70">
 							Agents
 						</span>
 						.
 					</h1>
-
 					<p
-						className="hero-in text-foreground/50 text-sm leading-relaxed mt-4 max-w-sm mx-auto"
-						style={{ animationDelay: "0.6s" }}
+						className="animate-fade-up text-white/50 text-base leading-relaxed max-w-md mb-8"
+						style={{ animationDelay: "0.5s" }}
 					>
-						A better place to collaborate on code — for humans
-						and agents
+						A better place to collaborate on code — designed
+						from the ground up to empower both human developers
+						and AI agents.
 					</p>
 
-					{/* Watch demo */}
 					<div
-						className="hero-in mt-5 flex justify-center"
+						className="animate-fade-up flex items-center"
 						style={{ animationDelay: "0.7s" }}
 					>
 						<DemoVideoDialog />
 					</div>
+				</div>
+			</div>
 
-					{/* Divider */}
+			{/* Right Panel — Login Form */}
+			<div className="relative flex w-full lg:w-1/2 flex-col items-center justify-center p-8 sm:p-12 xl:p-24 bg-background">
+				{/* Mobile Logo */}
+				<div className="absolute top-8 left-8 lg:hidden flex items-center gap-2">
+					<svg
+						className="size-5 text-foreground"
+						viewBox="0 0 65 65"
+						fill="none"
+						xmlns="http://www.w3.org/2000/svg"
+					>
+						<path d={LOGO_SVG_PATH} fill="currentColor" />
+					</svg>
+					<span className="text-sm font-medium tracking-tight text-foreground">
+						Repolith.
+					</span>
+				</div>
+
+				<div className="w-full max-w-[380px]">
 					<div
-						className="hero-in my-8 h-px"
-						style={{
-							animationDelay: "0.8s",
-							background: "var(--hero-border)",
-						}}
-					/>
+						className="animate-fade-up text-center lg:text-left mb-8"
+						style={{ animationDelay: "0.2s" }}
+					>
+						<h2 className="text-2xl font-semibold tracking-tight text-foreground mb-1.5">
+							Welcome back
+						</h2>
+						<p className="text-sm text-foreground/50">
+							Sign in to your account to continue
+						</p>
+					</div>
 
-					{/* Login */}
-					<div className="hero-in" style={{ animationDelay: "1.0s" }}>
+					<div
+						className="animate-fade-up"
+						style={{ animationDelay: "0.4s" }}
+					>
 						<LoginButton redirectTo={safeTarget} />
 					</div>
 
-					<p
-						className="hero-in text-[11px] text-foreground/40 mt-3 mx-auto max-w-xs"
-						style={{ animationDelay: "1.2s" }}
+					<div
+						className="animate-fade-up mt-6 flex justify-center lg:hidden"
+						style={{ animationDelay: "0.5s" }}
 					>
-						Your access token is encrypted and stored securely.
-						Only the permissions you grant will be used.
-					</p>
+						<DemoVideoDialog />
+					</div>
+
+					<div
+						className="animate-fade-up mt-8 text-center lg:text-left"
+						style={{ animationDelay: "0.6s" }}
+					>
+						<p className="text-[11px] text-foreground/40 leading-relaxed">
+							By continuing, you acknowledge that your
+							access token is encrypted and stored
+							securely. Only the permissions you grant
+							will be used.
+						</p>
+					</div>
 				</div>
 			</div>
 		</div>
