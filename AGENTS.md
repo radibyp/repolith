@@ -13,6 +13,9 @@ Use Node `22` from `.nvmrc` and Bun `1.3.5`. Start local services with `docker c
 - `bun lint`, `bun fmt`, `bun typecheck`: run individual quality gates.
 - `cd apps/web && bunx prisma migrate dev`: apply local Prisma migrations.
 
+## Documentation & Library Research
+Prefer `Context7` for third-party framework and library documentation before using general web search or guessing APIs. Check the installed version in `package.json` first, resolve the library ID, and query the version-matched docs for concrete tasks such as implementation details, configuration, migrations, and breaking API changes. This is especially important for the main stack here, including Next.js `16`, React `19`, Prisma `7`, Tailwind `4`, Better Auth, TanStack Query, and Bun. If `Context7` does not cover the package well enough, fall back to the library's official docs or source code and note that gap in your response.
+
 ## Coding Style & Naming Conventions
 TypeScript is strict at the workspace root. Inside `apps/web`, use the `@/*` alias for imports from `src`. Formatting is enforced by `oxfmt`: tabs, semicolons, double quotes, sorted imports, and sorted Tailwind classes. Linting is handled by `oxlint`, so run `bun fmt` and `bun lint` instead of hand-formatting. Use PascalCase for React components, camelCase for utilities and stores, and standard Next route filenames such as `page.tsx`, `layout.tsx`, and `route.ts`.
 
