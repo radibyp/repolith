@@ -5,6 +5,7 @@
 	"scripts": {
 		"dev": "next dev",
 		"build": "prisma generate && next build",
+		"analyze": "prisma generate && ANALYZE=true next build",
 		"start": "next start",
 		"postinstall": "prisma generate",
 		"typecheck": "tsc --noEmit",
@@ -87,6 +88,7 @@
 		"zod": "^4.3.6"
 	},
 	"devDependencies": {
+		"@next/bundle-analyzer": "^16.1.6",
 		"@tailwindcss/postcss": "^4",
 		"@types/pg": "^8.16.0",
 		"@types/react": "^19",

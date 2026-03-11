@@ -1,3 +1,4 @@
+import { waitUntil } from "@vercel/functions";
 import type { Metadata } from "next";
 import { getServerSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
@@ -7,6 +8,7 @@ import {
 	getNotifications,
 	getUserEvents,
 	getTrendingRepos,
+	warmRepoPageDataBatch,
 } from "@/lib/github";
 import { DashboardContent } from "@/components/dashboard/dashboard-content";
 import { all } from "better-all";
@@ -38,6 +40,8 @@ export default async function DashboardPage() {
 			activity: async () => await getUserEvents(githubUser.login, 20),
 			trending: async () => await getTrendingRepos(undefined, "weekly", 8),
 		});
+
+	waitUntil(warmRepoPageDataBatch(repos.map((repo) => repo.full_name)));
 
 	return (
 		<DashboardContent

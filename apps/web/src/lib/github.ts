@@ -19,6 +19,7 @@ import {
 import { redis } from "./redis";
 import { computeContributorScore } from "./contributor-score";
 import { getCachedAuthorDossier, setCachedAuthorDossier } from "./repo-data-cache";
+import { normalizeRepoFullNames } from "./repo-warming";
 
 export type RepoPermissions = {
 	admin: boolean;
@@ -6960,6 +6961,27 @@ export const getRepoPageData = cache(
 		return fetchAndCacheRepoPageData(owner, repo);
 	},
 );
+
+export async function warmRepoPageDataBatch(
+	repoFullNames: readonly string[],
+	limit = 3,
+): Promise<void> {
+	const reposToWarm = normalizeRepoFullNames(repoFullNames, limit);
+	if (reposToWarm.length === 0) return;
+
+	const authCtx = await getGitHubAuthContext();
+	if (!authCtx) return;
+
+	for (const repoFullName of reposToWarm) {
+		const [owner, repo] = repoFullName.split("/");
+
+		try {
+			await getRepoPageData(owner, repo);
+		} catch {
+			// Best-effort warming should never fail the caller.
+		}
+	}
+}
 
 export async function fetchAndCacheRepoPageData(
 	owner: string,

@@ -108,6 +108,7 @@ model Subscription {
   billingInterval      String?
   stripeScheduleId     String?
 
+  @@index([referenceId, status])
   @@map("subscription")
 }
 
@@ -157,6 +158,8 @@ model ChatConversation {
 
   @@unique([userId, contextKey])
   @@index([userId, chatType])
+  @@index([userId, updatedAt])
+  @@index([userId, chatType, updatedAt])
   @@map("chat_conversations")
 }
 
@@ -259,6 +262,7 @@ model PinnedItem {
 
   @@unique([userId, owner, repo, url])
   @@index([userId, owner, repo])
+  @@index([userId, owner, repo, pinnedAt])
   @@map("pinned_items")
 }
 
@@ -315,6 +319,8 @@ model CreditLedger {
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId, type])
+  @@index([userId, createdAt])
   @@index([userId, expiresAt])
   @@map("credit_ledger")
 }
@@ -345,6 +351,7 @@ model PromptRequest {
   updatedAt      String
 
   @@index([owner, repo, status])
+  @@index([owner, repo, status, createdAt])
   @@index([userId])
   @@map("prompt_requests")
 }

@@ -1,5 +1,10 @@
+import bundleAnalyzer from "@next/bundle-analyzer";
 import { withSentryConfig } from "@sentry/nextjs";
 import type { NextConfig } from "next";
+
+const withBundleAnalyzer = bundleAnalyzer({
+	enabled: process.env.ANALYZE === "true",
+});
 
 /**
  * Known first-segment routes that should NOT be rewritten to /repos/...
@@ -24,6 +29,7 @@ const KNOWN_ROUTES = [
 
 const nextConfig: NextConfig = {
 	devIndicators: false,
+	reactCompiler: true,
 	serverExternalPackages: ["@prisma/client"],
 	experimental: {
 		staleTimes: {
@@ -36,7 +42,6 @@ const nextConfig: NextConfig = {
 			fullUrl: true,
 		},
 	},
-	// reactCompiler: true,
 	images: {
 		...(process.env.NODE_ENV === "development" && {
 			dangerouslyAllowLocalIP: true,
@@ -102,7 +107,7 @@ const nextConfig: NextConfig = {
 	},
 };
 
-export default withSentryConfig(nextConfig, {
+export default withSentryConfig(withBundleAnalyzer(nextConfig), {
 	// For all available options, see:
 	// https://www.npmjs.com/package/@sentry/webpack-plugin#options
 

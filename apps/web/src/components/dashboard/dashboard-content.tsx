@@ -3,7 +3,6 @@
 import { noSSR } from "foxact/no-ssr";
 import { Suspense, useEffect, useState, useCallback, useTransition, useMemo } from "react";
 import { useQueryState, parseAsStringLiteral } from "nuqs";
-import Image from "next/image";
 import Link from "next/link";
 import {
 	GitPullRequest,
@@ -31,6 +30,7 @@ import {
 import { cn, formatNumber } from "@/lib/utils";
 import { TimeAgo } from "@/components/ui/time-ago";
 import { toInternalUrl, getLanguageColor } from "@/lib/github-utils";
+import { GithubAvatar } from "@/components/shared/github-avatar";
 import { RecentlyViewed } from "./recently-viewed";
 import { CreateRepoDialog } from "@/components/repo/create-repo-dialog";
 import { markNotificationDone } from "@/app/(app)/repos/actions";
@@ -42,6 +42,8 @@ import {
 	reorderPinnedRepos,
 	type PinnedRepo,
 } from "@/lib/pinned-repos";
+import { getRecentViews } from "@/lib/recent-views";
+import { repoFullNameFromInternalUrl, warmReposInBackground } from "@/lib/repo-warming";
 import type {
 	IssueItem,
 	RepoItem,
@@ -95,6 +97,19 @@ export function DashboardContent({
 			}),
 		);
 	}, []);
+
+	useEffect(() => {
+		const recentRepoNames = getRecentViews()
+			.map((item) => repoFullNameFromInternalUrl(item.url))
+			.filter((repoName): repoName is string => repoName !== null);
+		const pinnedRepoNames = getPinnedRepos().map((repo) => repo.full_name);
+
+		warmReposInBackground([
+			...pinnedRepoNames,
+			...recentRepoNames,
+			...repos.map((repo) => repo.full_name),
+		]);
+	}, [repos]);
 
 	const hasWork =
 		reviewRequests.items.length > 0 ||
@@ -798,11 +813,10 @@ function RepoRow({
 				href={`/${repo.full_name}`}
 				className="flex items-start gap-2.5 px-4 py-2.5 hover:bg-muted/50 dark:hover:bg-white/[0.02] transition-colors border-b border-border/40 last:border-b-0"
 			>
-				<Image
+				<GithubAvatar
 					src={repo.owner.avatar_url}
 					alt={repo.owner.login}
-					width={18}
-					height={18}
+					size={18}
 					className="rounded-sm shrink-0 mt-0.5 w-[18px] h-[18px] object-cover"
 				/>
 				<div className="flex-1 min-w-0">
@@ -925,13 +939,11 @@ function PinnedRepoRow({
 				className="flex items-start gap-2.5 flex-1 min-w-0"
 				draggable={false}
 			>
-				<Image
+				<GithubAvatar
 					src={repo.owner.avatar_url}
 					alt={repo.owner.login}
-					width={18}
-					height={18}
+					size={18}
 					className="rounded-sm shrink-0 mt-0.5 w-[18px] h-[18px] object-cover"
-					draggable={false}
 				/>
 				<div className="flex-1 min-w-0">
 					<div className="flex items-center gap-2">
@@ -1012,13 +1024,16 @@ function TrendingRow({ repo }: { repo: TrendingRepoItem }) {
 			href={`/${repo.full_name}`}
 			className="group flex items-start gap-2.5 px-4 py-2 hover:bg-muted/50 dark:hover:bg-white/[0.02] transition-colors border-b border-border/40 last:border-b-0"
 		>
-			<Image
-				src={repo.owner?.avatar_url ?? ""}
-				alt={repo.owner?.login ?? ""}
-				width={18}
-				height={18}
-				className="rounded-sm shrink-0 mt-0.5 w-[18px] h-[18px] object-cover"
-			/>
+			{repo.owner?.avatar_url ? (
+				<GithubAvatar
+					src={repo.owner.avatar_url}
+					alt={repo.owner.login}
+					size={18}
+					className="rounded-sm shrink-0 mt-0.5 w-[18px] h-[18px] object-cover"
+				/>
+			) : (
+				<div className="w-[18px] h-[18px] rounded-sm shrink-0 mt-0.5 bg-muted" />
+			)}
 			<div className="flex-1 min-w-0">
 				<div className="flex items-center gap-2">
 					<span className="text-xs font-mono truncate group-hover:text-foreground transition-colors">

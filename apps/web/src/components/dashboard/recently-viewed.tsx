@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { History, GitPullRequest, CircleDot, ChevronRight, Search } from "lucide-react";
+import { GithubAvatar } from "@/components/shared/github-avatar";
 import { cn } from "@/lib/utils";
 import { TimeAgo } from "@/components/ui/time-ago";
 import { getRecentViews, type RecentViewItem } from "@/lib/recent-views";
@@ -117,11 +117,10 @@ function RecentViewRow({ item }: { item: RecentViewItem }) {
 				)}
 			/>
 		) : item.image ? (
-			<Image
+			<GithubAvatar
 				src={item.image}
 				alt=""
-				width={16}
-				height={16}
+				size={16}
 				className="w-4 h-4 rounded-sm shrink-0"
 			/>
 		) : (
