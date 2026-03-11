@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect, useMemo, memo } from "react";
 import Link from "next/link";
-import Image from "next/image";
+import { GithubAvatar } from "@/components/shared/github-avatar";
 import { ChevronDown, FileCode2 } from "lucide-react";
 import type { Highlighter, BundledLanguage } from "shiki";
 import { cn } from "@/lib/utils";
@@ -59,10 +59,11 @@ function getClientHighlighter(): Promise<Highlighter> {
 	if (highlighterInstance) return Promise.resolve(highlighterInstance);
 	if (!highlighterPromise) {
 		highlighterPromise = import("shiki")
-			.then(({ createHighlighter }) =>
+			.then(({ createHighlighter, createJavaScriptRegexEngine }) =>
 				createHighlighter({
 					themes: ["vitesse-light", "vitesse-black"],
 					langs: [],
+					engine: createJavaScriptRegexEngine(),
 				}),
 			)
 			.then((h) => {
@@ -94,7 +95,11 @@ function parseDiffHunkLines(diffHunk: string): ParsedDiffLine[] {
 		if (raw.startsWith("+")) return { type: "add", content: raw.slice(1), raw };
 		if (raw.startsWith("-")) return { type: "remove", content: raw.slice(1), raw };
 		// Context lines start with a space
-		return { type: "context", content: raw.startsWith(" ") ? raw.slice(1) : raw, raw };
+		return {
+			type: "context",
+			content: raw.startsWith(" ") ? raw.slice(1) : raw,
+			raw,
+		};
 	});
 }
 
@@ -311,12 +316,11 @@ export function CollapsibleReviewCard({
 								onClick={(e) => e.stopPropagation()}
 								className="flex items-center gap-2 text-xs font-medium text-foreground/80 hover:text-foreground transition-colors"
 							>
-								<Image
+								<GithubAvatar
 									src={user.avatar_url}
 									alt={user.login}
-									width={16}
-									height={16}
 									className="rounded-full shrink-0"
+									size={16}
 								/>
 								<span className="hover:underline">
 									{user.login}

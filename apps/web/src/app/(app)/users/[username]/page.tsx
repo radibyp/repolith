@@ -55,7 +55,7 @@ export async function generateMetadata({
 	const displayName = userData.name ? `${userData.name} (${userData.login})` : userData.login;
 	return {
 		title: displayName,
-		description: userData.bio || `${displayName} on Better Hub`,
+		description: userData.bio || `${displayName} on Repolith`,
 		openGraph: { title: displayName, ...ogImages(ogUrl) },
 		twitter: { card: "summary_large_image", ...ogImages(ogUrl) },
 	};

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import Image from "next/image";
+import { GithubAvatar } from "@/components/shared/github-avatar";
 import { GitPullRequest, GitBranch, ArrowRight, Check, X } from "lucide-react";
 import type { CheckStatus, CrossReference } from "@/lib/github";
 import { CircleDot, ExternalLink } from "lucide-react";
@@ -111,12 +111,11 @@ export function PRHeader({
 							href={`/users/${author.login}`}
 							className="flex items-center gap-1.5 text-muted-foreground/70 hover:text-foreground transition-colors"
 						>
-							<Image
+							<GithubAvatar
 								src={author.avatar_url}
 								alt={author.login}
-								width={16}
-								height={16}
 								className="rounded-full"
+								size={16}
 							/>
 							<span className="font-mono text-[11px] hover:underline">
 								{author.login}
@@ -232,16 +231,15 @@ export function PRHeader({
 									title={`${r.login} ${r.state === "APPROVED" ? "approved" : "requested changes"}`}
 								>
 									<span className="relative">
-										<Image
+										<GithubAvatar
 											src={
 												r.avatar_url
 											}
 											alt={
 												r.login
 											}
-											width={16}
-											height={16}
 											className="rounded-full"
+											size={16}
 										/>
 										<span
 											className={cn(

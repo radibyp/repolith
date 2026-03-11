@@ -9,6 +9,7 @@ import { QueryProvider } from "@/components/providers/query-provider";
 import { SWRegister } from "@/components/pwa/sw-register";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import Script from "next/script";
 
 const geistSans = Geist({
 	variable: "--font-geist-sans",
@@ -69,6 +70,13 @@ export default function RootLayout({
 	return (
 		<html lang="en" suppressHydrationWarning>
 			<head>
+				{process.env.NODE_ENV === "development" && (
+					<Script
+						src="//unpkg.com/react-grab/dist/index.global.js"
+						crossOrigin="anonymous"
+						strategy="beforeInteractive"
+					/>
+				)}
 				<script
 					dangerouslySetInnerHTML={{
 						__html: generateThemeScript(listThemes()),

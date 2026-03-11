@@ -244,7 +244,7 @@ export function AccountTab({
 					GitHub Permissions
 				</label>
 				<p className="mt-1 text-[10px] text-muted-foreground/50 font-mono">
-					Manage which GitHub permissions are granted to Better Hub.
+					Manage which GitHub permissions are granted to Repolith.
 					Toggle scopes and click update to re-authorize.
 				</p>
 

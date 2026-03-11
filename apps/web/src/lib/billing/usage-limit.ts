@@ -1,4 +1,5 @@
 import { prisma } from "../db";
+import { isBillingExemptUser } from "./billing-exemption";
 import { getCreditBalance } from "./credit";
 import { getActiveSubscription, getCurrentPeriodUsage, getSpendingLimit } from "./spending-limit";
 import { getStripeClient, isStripeEnabled } from "./stripe";
@@ -92,8 +93,13 @@ export async function checkUsageLimit(
 		return { allowed: true, current: 0, limit: 0 };
 	}
 
-	// 2. Ensure user has a payment gateway customer
-	const { gateway, customerId } = await ensurePaymentCustomer(userId);
+	// 2. Admin users are exempt from app-billed usage limits.
+	if (await isBillingExemptUser(userId)) {
+		return { allowed: true, current: 0, limit: 0 };
+	}
+
+	// 3. Ensure user has a payment gateway customer
+	const { customerId } = await ensurePaymentCustomer(userId);
 	if (!customerId) {
 		// Check if user even exists
 		const userExists = await prisma.user.findUnique({
@@ -117,7 +123,7 @@ export async function checkUsageLimit(
 		return { allowed: true, current: 0, limit: 0 };
 	}
 
-	// 3. Active subscription — spending limit check
+	// 4. Active subscription — spending limit check
 	const subscription = await getActiveSubscription(userId);
 	if (subscription?.periodStart) {
 		const [periodUsage, monthlyCapUsd] = await Promise.all([
@@ -135,7 +141,7 @@ export async function checkUsageLimit(
 		return { allowed: true, current: 0, limit: 0 };
 	}
 
-	// 4. Payment customer exists, no subscription — spending limit + credit balance check
+	// 5. Payment customer exists, no subscription — spending limit + credit balance check
 	const [monthlyCapUsd, balance] = await Promise.all([
 		getSpendingLimit(userId),
 		getCreditBalance(userId),

@@ -5,6 +5,7 @@ import {
 	type CostDetails,
 	type UsageDetails,
 } from "./ai-models";
+import { isBillingExemptUser } from "./billing-exemption";
 import { getCreditBalance } from "./credit";
 import { ACTIVE_SUBSCRIPTION_STATUSES, FIXED_COSTS } from "./config";
 import { Prisma } from "../../generated/prisma/client";
@@ -91,6 +92,7 @@ export async function logTokenUsage(params: {
 	conversationId?: string | undefined;
 }): Promise<void> {
 	const usageDetails = buildUsageDetails(params.usage);
+	const isBillingExempt = await isBillingExemptUser(params.userId);
 	const costDetails =
 		params.isCustomApiKey || !hasModelPricing(params.modelId)
 			? null
@@ -99,7 +101,7 @@ export async function logTokenUsage(params: {
 
 	const usageLog = await withSerializableTx(async (tx) => {
 		const { creditUsed, costUsd } =
-			params.isCustomApiKey || fullCost <= 0
+			params.isCustomApiKey || isBillingExempt || fullCost <= 0
 				? { creditUsed: 0, costUsd: 0 }
 				: await splitCost(tx, params.userId, fullCost);
 
@@ -149,10 +151,11 @@ export async function logFixedCostUsage(params: {
 }): Promise<void> {
 	const fullCost =
 		params.costUsd ?? FIXED_COSTS[params.taskType as keyof typeof FIXED_COSTS] ?? 0;
+	const isBillingExempt = await isBillingExemptUser(params.userId);
 
 	const usageLog = await withSerializableTx(async (tx) => {
 		const { creditUsed, costUsd } =
-			fullCost > 0
+			!isBillingExempt && fullCost > 0
 				? await splitCost(tx, params.userId, fullCost)
 				: { creditUsed: 0, costUsd: 0 };
 

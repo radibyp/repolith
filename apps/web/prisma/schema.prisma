@@ -1,4 +1,3 @@
-
 generator client {
   provider = "prisma-client"
   output   = "../src/generated/prisma"
@@ -19,8 +18,8 @@ model User {
   createdAt      DateTime
   updatedAt      DateTime
 
-  sessions   Session[]
-  accounts   Account[]
+  sessions     Session[]
+  accounts     Account[]
   usageLogs    UsageLog[]
   aiCallLogs   AiCallLog[]
   creditLedger CreditLedger[]
@@ -35,8 +34,8 @@ model User {
   stripeCustomerId String?
   polarCustomerId  String?
 
-  @@map("user")
   @@index([githubPat, email])
+  @@map("user")
 }
 
 model Session {
@@ -53,8 +52,8 @@ model Session {
 
   impersonatedBy String?
 
-  @@map("session")
   @@index([userId, expiresAt])
+  @@map("session")
 }
 
 model Account {
@@ -74,8 +73,8 @@ model Account {
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@map("account")
   @@index([userId, providerId])
+  @@map("account")
 }
 
 model Verification {
@@ -86,8 +85,8 @@ model Verification {
   createdAt  DateTime?
   updatedAt  DateTime?
 
-  @@map("verification")
   @@index([identifier, expiresAt])
+  @@map("verification")
 }
 
 model Subscription {
@@ -264,15 +263,15 @@ model PinnedItem {
 }
 
 model UsageLog {
-  id              String   @id @default(cuid())
-  userId          String
-  taskType        String
-  costUsd         Decimal  @default(0) @db.Decimal(10, 6)
-  creditUsed      Decimal  @default(0) @db.Decimal(10, 6)
-  aiCallLogId     Int?     @unique
-  stripeReported  Boolean  @default(false)
-  polarReported   Boolean  @default(false)
-  createdAt       DateTime @default(now())
+  id             String   @id @default(cuid())
+  userId         String
+  taskType       String
+  costUsd        Decimal  @default(0) @db.Decimal(10, 6)
+  creditUsed     Decimal  @default(0) @db.Decimal(10, 6)
+  aiCallLogId    Int?     @unique
+  stripeReported Boolean  @default(false)
+  polarReported  Boolean  @default(false)
+  createdAt      DateTime @default(now())
 
   aiCallLog AiCallLog? @relation(fields: [aiCallLogId], references: [id])
   user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -322,13 +321,12 @@ model CreditLedger {
 
 model SpendingLimit {
   userId        String   @id
-  monthlyCapUsd Decimal  @db.Decimal(10, 2) @default(10.00)
+  monthlyCapUsd Decimal  @default(10.00) @db.Decimal(10, 2)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
   @@map("spending_limit")
 }
-
 
 model PromptRequest {
   id             String  @id
@@ -352,7 +350,7 @@ model PromptRequest {
 }
 
 model PromptRequestComment {
-  id              String @id
+  id              String  @id
   promptRequestId String
   userId          String
   userLogin       String?
@@ -368,7 +366,7 @@ model PromptRequestComment {
 }
 
 model PromptRequestReaction {
-  id              String @id
+  id              String  @id
   promptRequestId String
   userId          String
   userLogin       String?
@@ -381,4 +379,19 @@ model PromptRequestReaction {
   @@index([promptRequestId])
   @@index([userId])
   @@map("prompt_request_reactions")
+}
+
+model PrOverviewAnalysis {
+  id           String @id
+  owner        String
+  repo         String
+  pullNumber   Int
+  headSha      String
+  analysisJson String
+  createdAt    String
+  updatedAt    String
+
+  @@unique([owner, repo, pullNumber])
+  @@index([owner, repo, pullNumber, headSha])
+  @@map("pr_overview_analysis")
 }

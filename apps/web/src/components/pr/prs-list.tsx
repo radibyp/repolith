@@ -4,7 +4,7 @@ import { useState, useMemo, useRef, useCallback, useTransition, useEffect } from
 import { createPortal } from "react-dom";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import Image from "next/image";
+import { GithubAvatar } from "@/components/shared/github-avatar";
 import {
 	GitPullRequest,
 	GitPullRequestClosed,
@@ -522,7 +522,7 @@ function PRPeekSheet({
 										</span>
 										{data.user && (
 											<span className="flex items-center gap-1 text-[11px] text-muted-foreground/60">
-												<Image
+												<GithubAvatar
 													src={
 														data
 															.user
@@ -533,13 +533,10 @@ function PRPeekSheet({
 															.user
 															.login
 													}
-													width={
-														14
-													}
-													height={
-														14
-													}
 													className="rounded-full"
+													size={
+														14
+													}
 												/>
 												{
 													data
@@ -1506,16 +1503,15 @@ export function PRsList({
 										}}
 										className="flex items-center gap-1.5 px-2 py-1 text-[10px] font-mono border border-foreground/30 bg-muted/50 dark:bg-white/4 text-foreground transition-colors cursor-pointer"
 									>
-										<Image
+										<GithubAvatar
 											src={
 												selectedAuthorData.avatar_url
 											}
 											alt={
 												selectedAuthorData.login
 											}
-											width={14}
-											height={14}
 											className="rounded-full"
+											size={14}
 										/>
 										{
 											selectedAuthorData.login
@@ -1594,17 +1590,14 @@ export function PRsList({
 																}}
 																className="flex items-center gap-2 w-full px-2.5 py-1.5 text-[11px] font-mono text-muted-foreground hover:bg-muted/60 dark:hover:bg-white/3 hover:text-foreground transition-colors cursor-pointer"
 															>
-																<Image
+																<GithubAvatar
 																	src={
 																		author.avatar_url
 																	}
 																	alt={
 																		author.login
 																	}
-																	width={
-																		16
-																	}
-																	height={
+																	size={
 																		16
 																	}
 																	className="rounded-full"
@@ -1872,17 +1865,14 @@ export function PRsList({
 															<Link
 																href={`/users/${r.login}`}
 															>
-																<Image
+																<GithubAvatar
 																	src={
 																		r.avatar_url
 																	}
 																	alt={
 																		r.login
 																	}
-																	width={
-																		16
-																	}
-																	height={
+																	size={
 																		16
 																	}
 																	className="rounded-full border border-border hover:ring-2 hover:ring-primary/50 transition-all"
@@ -1908,7 +1898,7 @@ export function PRsList({
 												href={`/users/${pr.user.login}`}
 												className="flex items-center gap-1 text-[11px] text-muted-foreground/60 hover:text-foreground transition-colors"
 											>
-												<Image
+												<GithubAvatar
 													src={
 														pr
 															.user
@@ -1919,10 +1909,7 @@ export function PRsList({
 															.user
 															.login
 													}
-													width={
-														14
-													}
-													height={
+													size={
 														14
 													}
 													className="rounded-full"
@@ -2057,17 +2044,14 @@ export function PRsList({
 															<Link
 																href={`/users/${a.login}`}
 															>
-																<Image
+																<GithubAvatar
 																	src={
 																		a.avatar_url
 																	}
 																	alt={
 																		a.login
 																	}
-																	width={
-																		16
-																	}
-																	height={
+																	size={
 																		16
 																	}
 																	className="rounded-full border border-border hover:ring-2 hover:ring-primary/50 transition-all"

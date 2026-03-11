@@ -3189,7 +3189,7 @@ export interface PRBundleData {
 			message: string;
 			author: { name: string; date: string } | null;
 			committer: { name: string; date: string } | null;
-			verification?: { verified: boolean; reason?: string };
+			verification?: { verified: boolean; reason: string };
 		};
 		author: { login: string; avatar_url: string } | null;
 	}[];

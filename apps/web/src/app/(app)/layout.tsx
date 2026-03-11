@@ -4,6 +4,8 @@ import { AppNavbar } from "@/components/layout/navbar";
 import { GlobalChatProvider } from "@/components/shared/global-chat-provider";
 import { GlobalChatPanel } from "@/components/shared/global-chat-panel";
 import { NavigationProgress } from "@/components/shared/navigation-progress";
+import { NavVisibilityProvider } from "@/components/shared/nav-visibility-provider";
+import { NavAwareContent } from "@/components/layout/nav-aware-content";
 import { getServerSession } from "@/lib/auth";
 import { getNotifications, checkIsStarred } from "@/lib/github";
 import { type GhostTabState } from "@/lib/chat-store";
@@ -32,8 +34,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 	try {
 		notifications = (await getNotifications(20)) as NotificationItem[];
 	} catch {
-		// Swallow rate-limit / network errors so the layout can still render and show the onboarding experience.
-		// Individual pages will throw their own errors caught by errors.tsx
+		// Swallow rate-limit / network errors so the layout still renders.
+		// Individual pages will throw their own errors caught by error.tsx.
 	}
 
 	const onboardingDone = session?.user?.onboardingDone ?? false;
@@ -42,11 +44,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 	if (!onboardingDone) {
 		try {
 			[initialStarredAuth, initialStarredHub] = await Promise.all([
-				checkIsStarred("repolith", "repolith"),
-				checkIsStarred("repolith", "repolith"),
+				checkIsStarred("better-auth", "better-auth"),
+				checkIsStarred("better-auth", "better-hub"),
 			]);
 		} catch {
-			// Swallow errors so the onboarding can still render, just with unstarred state.
+			// Same — don't let secondary API failures crash the shell.
 		}
 	}
 
@@ -65,20 +67,24 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 						<GitHubLinkInterceptor>
 							<TooltipProvider>
 								<NavigationProgress />
-								<div className="flex flex-col h-dvh overflow-y-auto lg:overflow-hidden">
-									<AppNavbar
-										session={session}
-										notifications={
-											notifications
-										}
-									/>
-									<div className="mt-10 lg:h-[calc(100dvh-var(--spacing)*10)] flex flex-col px-2 sm:px-4 pt-2 lg:overflow-auto overflow-x-hidden">
-										{children}
+								<NavVisibilityProvider>
+									<div className="flex flex-col h-dvh overflow-y-auto lg:overflow-hidden">
+										<AppNavbar
+											session={
+												session
+											}
+											notifications={
+												notifications
+											}
+										/>
+										<NavAwareContent>
+											{children}
+										</NavAwareContent>
+										<Suspense>
+											<GlobalChatPanel />
+										</Suspense>
 									</div>
-									<Suspense>
-										<GlobalChatPanel />
-									</Suspense>
-								</div>
+								</NavVisibilityProvider>
 								<OnboardingOverlay
 									userName={
 										session?.githubUser

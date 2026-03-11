@@ -30,8 +30,7 @@ export async function generateMetadata({
 	if (actorType === "Organization") {
 		const orgData = await getOrg(owner).catch(() => null);
 		const title = orgData?.name || orgData?.login || userData.name || userData.login;
-		const description =
-			orgData?.description || userData.bio || `${title} on Better Hub`;
+		const description = orgData?.description || userData.bio || `${title} on Repolith`;
 		return {
 			title,
 			description,

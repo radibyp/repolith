@@ -31,7 +31,12 @@ const nextConfig: NextConfig = {
 			static: 180,
 		},
 	},
-	reactCompiler: true,
+	logging: {
+		fetches: {
+			fullUrl: true,
+		},
+	},
+	// reactCompiler: true,
 	images: {
 		...(process.env.NODE_ENV === "development" && {
 			dangerouslyAllowLocalIP: true,
