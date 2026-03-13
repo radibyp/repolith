@@ -11,6 +11,7 @@ import {
 	AlertCircle,
 	TextSearch,
 } from "lucide-react";
+import { BILLING_ERROR } from "@/lib/billing/config";
 import { cn } from "@/lib/utils";
 import { useOverviewActive } from "./pr-detail-layout";
 import { parseDiffPatch } from "@/lib/github-utils";
@@ -476,6 +477,18 @@ const LOADING_PHRASES = [
 	"Preparing review order",
 ];
 
+function getOverviewErrorMessage(errorCode: unknown): string | null {
+	if (errorCode === BILLING_ERROR.CREDIT_EXHAUSTED) {
+		return "Your credits have been used up";
+	}
+
+	if (errorCode === BILLING_ERROR.SPENDING_LIMIT_REACHED) {
+		return "Monthly spending limit reached";
+	}
+
+	return null;
+}
+
 export function PROverviewPanel({
 	owner,
 	repo,
@@ -484,7 +497,6 @@ export function PROverviewPanel({
 	files,
 	prTitle,
 	prBody,
-	participants,
 }: PROverviewPanelProps) {
 	const isActive = useOverviewActive();
 	const [groups, setGroups] = useState<ChangeGroup[]>([]);
@@ -537,7 +549,11 @@ export function PROverviewPanel({
 
 				if (!response.ok) {
 					const errorData = await response.json().catch(() => ({}));
-					throw new Error(errorData.error || "Failed to analyze PR");
+					throw new Error(
+						getOverviewErrorMessage(errorData.error) ||
+							errorData.error ||
+							"Failed to analyze PR",
+					);
 				}
 
 				const data = await response.json();

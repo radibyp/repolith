@@ -12,10 +12,16 @@ import { getCreditBalanceSnapshot } from "./credit";
 import { CREDIT_ENTRY_TYPE, FIXED_COSTS } from "./config";
 import { withSerializableTx } from "./transaction";
 
+const INSUFFICIENT_CREDIT_BALANCE_MESSAGE = "Insufficient credit balance to record usage";
+
 class InsufficientCreditBalanceError extends Error {
 	constructor() {
-		super("Insufficient credit balance to record usage");
+		super(INSUFFICIENT_CREDIT_BALANCE_MESSAGE);
 	}
+}
+
+export function isInsufficientCreditBalanceError(error: unknown): boolean {
+	return error instanceof Error && error.message === INSUFFICIENT_CREDIT_BALANCE_MESSAGE;
 }
 
 function buildUsageDetails(usage: LanguageModelUsage): UsageDetails {

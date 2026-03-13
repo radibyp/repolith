@@ -4,9 +4,8 @@ import { getErrorMessage } from "@/lib/utils";
 import { getInternalModel } from "@/lib/billing/ai-models.server";
 import { headers } from "next/headers";
 import { checkUsageLimit } from "@/lib/billing/usage-limit";
-import { getBillingErrorCode } from "@/lib/billing/config";
-import { logTokenUsage } from "@/lib/billing/token-usage";
-import { waitUntil } from "@vercel/functions";
+import { BILLING_ERROR, getBillingErrorCode } from "@/lib/billing/config";
+import { isInsufficientCreditBalanceError, logTokenUsage } from "@/lib/billing/token-usage";
 import { z } from "zod";
 import { getPrOverviewAnalysis, savePrOverviewAnalysis } from "@/lib/pr-overview-store";
 import { extractSnippetFromPatch } from "@/lib/extract-snippet";
@@ -256,17 +255,6 @@ ${filesContext}`;
 			temperature: 0.3,
 		});
 
-		waitUntil(
-			logTokenUsage({
-				userId: session.user.id,
-				provider: "openrouter",
-				modelId,
-				taskType: "pr-overview",
-				usage,
-				isCustomApiKey,
-			}).catch((e) => console.error("[billing] logTokenUsage failed:", e)),
-		);
-
 		if (!output) {
 			return new Response(
 				JSON.stringify({
@@ -306,18 +294,23 @@ ${filesContext}`;
 			}),
 		}));
 
+		await logTokenUsage({
+			userId: session.user.id,
+			provider: "openrouter",
+			modelId,
+			taskType: "pr-overview",
+			usage,
+			isCustomApiKey,
+		});
+
 		if (headSha) {
-			waitUntil(
-				savePrOverviewAnalysis(
-					owner,
-					repo,
-					pullNumber,
-					headSha,
-					groups,
-				).catch((e) =>
-					console.error("[pr-overview] Failed to save analysis:", e),
-				),
-			);
+			await savePrOverviewAnalysis(
+				owner,
+				repo,
+				pullNumber,
+				headSha,
+				groups,
+			).catch((e) => console.error("[pr-overview] Failed to save analysis:", e));
 		}
 
 		return new Response(JSON.stringify({ groups, cached: false }), {
@@ -325,6 +318,16 @@ ${filesContext}`;
 			headers: { "Content-Type": "application/json" },
 		});
 	} catch (e: unknown) {
+		if (isInsufficientCreditBalanceError(e)) {
+			return new Response(
+				JSON.stringify({
+					error: BILLING_ERROR.CREDIT_EXHAUSTED,
+					creditExhausted: true,
+				}),
+				{ status: 429, headers: { "Content-Type": "application/json" } },
+			);
+		}
+
 		console.error("[pr-overview] Error:", e);
 		return new Response(
 			JSON.stringify({ error: getErrorMessage(e) || "Failed to analyze PR" }),
