@@ -14,6 +14,7 @@ import { extractSnippetFromPatch } from "@/lib/extract-snippet";
 export const maxDuration = 120;
 
 const MAX_SNIPPET_LINES = 15;
+const MAX_OVERVIEW_OUTPUT_TOKENS = 3000;
 
 const FileSchema = z.object({
 	filename: z.string(),
@@ -251,6 +252,7 @@ ${filesContext}`;
 			system: SYSTEM_PROMPT,
 			prompt,
 			output: Output.object({ schema: OverviewOutputSchema }),
+			maxOutputTokens: MAX_OVERVIEW_OUTPUT_TOKENS,
 			temperature: 0.3,
 		});
 
