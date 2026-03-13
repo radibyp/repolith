@@ -685,7 +685,7 @@ async function fetchUserEventsPublicUnauthenticated(username: string, perPage: n
 		{
 			headers: {
 				Accept: "application/vnd.github+json",
-				"User-Agent": "better-hub",
+				"User-Agent": "repolith",
 			},
 		},
 	);

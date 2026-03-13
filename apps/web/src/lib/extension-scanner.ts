@@ -7,7 +7,7 @@ import type {
 	IconMapping,
 	ExtensionType,
 } from "./theme-store-types";
-const MANIFEST_FILENAME = "better-hub-extension.json";
+const MANIFEST_FILENAME = "repolith-extension.json";
 const VALID_TYPES: ExtensionType[] = ["theme", "icon-theme"];
 class ScanError extends Error {
 	constructor(

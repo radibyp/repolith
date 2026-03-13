@@ -50,7 +50,7 @@ export function IssueCommentForm({
 }: IssueCommentFormProps) {
 	const router = useRouter();
 	const queryClient = useQueryClient();
-	const draftKey = `better-hub:draft:comment:${owner}/${repo}/${issueNumber}`;
+	const draftKey = `repolith:draft:comment:${owner}/${repo}/${issueNumber}`;
 
 	// Restore draft on mount
 	const [body, setBody] = useState(() => {
