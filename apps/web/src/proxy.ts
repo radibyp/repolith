@@ -7,6 +7,7 @@ const APP_ROUTES = new Set([
 	"dashboard",
 	"repos",
 	"issues",
+	"theme-store",
 	"prs",
 	"stars",
 	"settings",
@@ -18,6 +19,7 @@ const APP_ROUTES = new Set([
 	"api",
 	"debug",
 	"_next",
+	"schemas",
 ]);
 
 const GIT_SERVICES = new Set(["git-upload-pack", "git-receive-pack"]);

@@ -17,6 +17,7 @@ import { MutationEventProvider } from "@/components/shared/mutation-event-provid
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { OnboardingOverlay } from "@/components/onboarding/onboarding-overlay";
+import { IconThemeProvider } from "@/components/theme-store/icon-theme-provider";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
 	const session = await getServerSession();
@@ -64,81 +65,95 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 			<GlobalChatProvider initialTabState={initialTabState}>
 				<MutationEventProvider>
 					<ColorThemeProvider>
-						<GitHubLinkInterceptor>
-							<TooltipProvider>
-								<NavigationProgress />
-								<NavVisibilityProvider>
-									<div className="flex flex-col h-dvh overflow-y-auto lg:overflow-hidden">
-										<AppNavbar
-											session={
-												session
-											}
-											notifications={
-												notifications
-											}
-										/>
-										<NavAwareContent>
-											{children}
-										</NavAwareContent>
-										<Suspense>
-											<GlobalChatPanel />
-										</Suspense>
-									</div>
-								</NavVisibilityProvider>
-								<OnboardingOverlay
-									userName={
-										session?.githubUser
-											?.name ||
-										session?.githubUser
-											?.login ||
-										""
-									}
-									userAvatar={
-										session?.githubUser
-											?.avatar_url ||
-										""
-									}
-									bio={
-										session?.githubUser
-											?.bio || ""
-									}
-									company={
-										session?.githubUser
-											?.company ||
-										""
-									}
-									location={
-										session?.githubUser
-											?.location ||
-										""
-									}
-									publicRepos={
-										session?.githubUser
-											?.public_repos ??
-										0
-									}
-									followers={
-										session?.githubUser
-											?.followers ??
-										0
-									}
-									createdAt={
-										session?.githubUser
-											?.created_at ||
-										""
-									}
-									onboardingDone={
-										onboardingDone
-									}
-									initialStarredAuth={
-										initialStarredAuth
-									}
-									initialStarredHub={
-										initialStarredHub
-									}
-								/>
-							</TooltipProvider>
-						</GitHubLinkInterceptor>
+						<IconThemeProvider>
+							<GitHubLinkInterceptor>
+								<TooltipProvider>
+									<NavigationProgress />
+									<NavVisibilityProvider>
+										<div className="flex flex-col h-dvh overflow-y-auto lg:overflow-hidden">
+											<AppNavbar
+												session={
+													session
+												}
+												notifications={
+													notifications
+												}
+											/>
+											<NavAwareContent>
+												{
+													children
+												}
+											</NavAwareContent>
+											<Suspense>
+												<GlobalChatPanel />
+											</Suspense>
+										</div>
+									</NavVisibilityProvider>
+									<OnboardingOverlay
+										userName={
+											session
+												?.githubUser
+												?.name ||
+											session
+												?.githubUser
+												?.login ||
+											""
+										}
+										userAvatar={
+											session
+												?.githubUser
+												?.avatar_url ||
+											""
+										}
+										bio={
+											session
+												?.githubUser
+												?.bio ||
+											""
+										}
+										company={
+											session
+												?.githubUser
+												?.company ||
+											""
+										}
+										location={
+											session
+												?.githubUser
+												?.location ||
+											""
+										}
+										publicRepos={
+											session
+												?.githubUser
+												?.public_repos ??
+											0
+										}
+										followers={
+											session
+												?.githubUser
+												?.followers ??
+											0
+										}
+										createdAt={
+											session
+												?.githubUser
+												?.created_at ||
+											""
+										}
+										onboardingDone={
+											onboardingDone
+										}
+										initialStarredAuth={
+											initialStarredAuth
+										}
+										initialStarredHub={
+											initialStarredHub
+										}
+									/>
+								</TooltipProvider>
+							</GitHubLinkInterceptor>
+						</IconThemeProvider>
 					</ColorThemeProvider>
 				</MutationEventProvider>
 			</GlobalChatProvider>
