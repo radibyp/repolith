@@ -10,6 +10,7 @@ import { SWRegister } from "@/components/pwa/sw-register";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import Script from "next/script";
+import { cookies } from "next/headers";
 
 const geistSans = Geist({
 	variable: "--font-geist-sans",
@@ -62,14 +63,58 @@ export const metadata: Metadata = {
 	},
 };
 
-export default function RootLayout({
+function getMpThemeSSRStyle(cookieStore: Awaited<ReturnType<typeof cookies>>): string {
+	const themeId = cookieStore.get("color-theme")?.value;
+	const mode = cookieStore.get("color-mode")?.value as "dark" | "light" | undefined;
+	const mpData = cookieStore.get("mp-theme-data")?.value;
+	if (!themeId?.startsWith("mp:") || !mpData) return "";
+	try {
+		const parsed = JSON.parse(decodeURIComponent(mpData)) as {
+			dark?: { colors: Record<string, string> };
+			light?: { colors: Record<string, string> };
+		};
+		const variant = parsed[mode ?? "dark"] ?? parsed.dark;
+		if (!variant?.colors) return "";
+		return Object.entries(variant.colors)
+			.map(([k, v]) => `${k}:${v}`)
+			.join(";");
+	} catch {
+		return "";
+	}
+}
+export default async function RootLayout({
 	children,
 }: Readonly<{
 	children: React.ReactNode;
 }>) {
+	const cookieStore = await cookies();
+	const mpStyle = getMpThemeSSRStyle(cookieStore);
+	const ssrMode = cookieStore.get("color-mode")?.value;
+	const ssrClass = mpStyle && ssrMode === "light" ? "light" : mpStyle ? "dark" : undefined;
 	return (
-		<html lang="en" suppressHydrationWarning>
+		<html
+			lang="en"
+			suppressHydrationWarning
+			{...(ssrClass ? { className: ssrClass } : {})}
+			{...(mpStyle
+				? {
+						style: {
+							colorScheme:
+								ssrMode === "light"
+									? "light"
+									: "dark",
+						} as React.CSSProperties,
+					}
+				: {})}
+		>
 			<head>
+				{mpStyle && (
+					<style
+						dangerouslySetInnerHTML={{
+							__html: `:root{${mpStyle}}`,
+						}}
+					/>
+				)}
 				{process.env.NODE_ENV === "development" && (
 					<Script
 						src="//unpkg.com/react-grab/dist/index.global.js"

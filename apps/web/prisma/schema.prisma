@@ -249,8 +249,8 @@ model UsageLog {
   aiCallLogId Int?     @unique
   createdAt   DateTime @default(now())
 
-  aiCallLog  AiCallLog?   @relation(fields: [aiCallLogId], references: [id])
-  user       User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  aiCallLog   AiCallLog?    @relation(fields: [aiCallLogId], references: [id])
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   creditEntry CreditLedger?
 
   @@index([userId, createdAt])
@@ -280,16 +280,16 @@ model AiCallLog {
 }
 
 model CreditLedger {
-  id             String    @id @default(cuid())
-  userId         String
-  amount         Decimal   @db.Decimal(10, 6)
-  entryType      String    @map("type")
-  description    String?
-  metadataJson   String?
-  expiresAt      DateTime?
+  id              String    @id @default(cuid())
+  userId          String
+  amount          Decimal   @db.Decimal(10, 6)
+  entryType       String    @map("type")
+  description     String?
+  metadataJson    String?
+  expiresAt       DateTime?
   purchaseGrantId String?
-  usageLogId     String?   @unique
-  createdAt      DateTime  @default(now())
+  usageLogId      String?   @unique
+  createdAt       DateTime  @default(now())
 
   purchaseGrant PurchaseGrant? @relation(fields: [purchaseGrantId], references: [id], onDelete: SetNull)
   usageLog      UsageLog?      @relation(fields: [usageLogId], references: [id], onDelete: SetNull)
@@ -405,4 +405,46 @@ model PrOverviewAnalysis {
   @@unique([owner, repo, pullNumber])
   @@index([owner, repo, pullNumber, headSha])
   @@map("pr_overview_analysis")
+}
+
+model MarketplaceExtension {
+  id              String                 @id @default(cuid())
+  slug            String                 @unique
+  owner           String
+  repo            String
+  name            String
+  description     String
+  type            String
+  version         String                 @default("1.0.0")
+  manifestJson    String
+  dataJson        String?
+  readmeHtml      String?
+  iconUrl         String?
+  license         String?
+  authorGithubId  String
+  authorName      String
+  authorAvatarUrl String?
+  downloads       Int                    @default(0)
+  verified        Boolean                @default(false)
+  featured        Boolean                @default(false)
+  publishedAt     String
+  updatedAt       String
+  dataCachedAt    String?
+  installs        UserExtensionInstall[]
+
+  @@unique([owner, repo])
+  @@index([type])
+  @@index([downloads])
+  @@map("theme_store_extensions")
+}
+
+model UserExtensionInstall {
+  userId      String
+  extensionId String
+  installedAt String
+  extension   MarketplaceExtension @relation(fields: [extensionId], references: [id], onDelete: Cascade)
+
+  @@id([userId, extensionId])
+  @@index([userId])
+  @@map("user_theme_store_installs")
 }

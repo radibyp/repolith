@@ -5,13 +5,12 @@ import {
 	Check,
 	Loader2,
 	Sparkles,
-	FileCode2,
 	ChevronDown,
 	RefreshCw,
 	AlertCircle,
 	TextSearch,
 } from "lucide-react";
-import { BILLING_ERROR } from "@/lib/billing/config";
+import { FileTypeIcon } from "@/components/shared/file-icon";
 import { cn } from "@/lib/utils";
 import { useOverviewActive } from "./pr-detail-layout";
 import { parseDiffPatch } from "@/lib/github-utils";
@@ -315,7 +314,18 @@ function ChangeGroupCard({
 								{file.snippet && (
 									<div className="px-2">
 										<div className="flex items-center gap-2.5 border-t border-x border-foreground/20! px-3 pt-2 bg-[var(--code-bg)] pb-4 -mb-2 rounded-t-md">
-											<FileCode2 className="w-4 h-4 text-muted-foreground shrink-0" />
+											<FileTypeIcon
+												name={
+													file.filename
+														.split(
+															"/",
+														)
+														.pop() ||
+													file.filename
+												}
+												type="file"
+												className="w-4 h-4 shrink-0"
+											/>
 											<span className="font-mono flex items-center flex-1 min-w-0 overflow-hidden">
 												<span
 													className="truncate cursor-pointer hover:underline decoration-border underline-offset-4"
@@ -477,18 +487,6 @@ const LOADING_PHRASES = [
 	"Preparing review order",
 ];
 
-function getOverviewErrorMessage(errorCode: unknown): string | null {
-	if (errorCode === BILLING_ERROR.CREDIT_EXHAUSTED) {
-		return "Your credits have been used up";
-	}
-
-	if (errorCode === BILLING_ERROR.SPENDING_LIMIT_REACHED) {
-		return "Monthly spending limit reached";
-	}
-
-	return null;
-}
-
 export function PROverviewPanel({
 	owner,
 	repo,
@@ -497,6 +495,7 @@ export function PROverviewPanel({
 	files,
 	prTitle,
 	prBody,
+	participants,
 }: PROverviewPanelProps) {
 	const isActive = useOverviewActive();
 	const [groups, setGroups] = useState<ChangeGroup[]>([]);
@@ -549,11 +548,7 @@ export function PROverviewPanel({
 
 				if (!response.ok) {
 					const errorData = await response.json().catch(() => ({}));
-					throw new Error(
-						getOverviewErrorMessage(errorData.error) ||
-							errorData.error ||
-							"Failed to analyze PR",
-					);
+					throw new Error(errorData.error || "Failed to analyze PR");
 				}
 
 				const data = await response.json();
