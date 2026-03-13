@@ -84,7 +84,7 @@ const ICON_THEME_DATA = `{
   ]
 }`;
 
-const COLOR_THEME_PROMPT = `Create a Better Hub color theme in this repo. Generate the following files:
+const COLOR_THEME_PROMPT = `Create a Repolith color theme in this repo. Generate the following files:
 
 1. \`repolith-extension.json\` (at repo root) — the manifest:
 {
@@ -110,7 +110,7 @@ Use "$schema": "https://repolith.my.id/schemas/theme-data.schema.json" at the to
 
 Design a cohesive, visually appealing theme with good contrast and readability. Make sure the dark and light variants feel related but are properly tuned for their respective modes.`;
 
-const ICON_THEME_PROMPT = `Create a Better Hub file icon theme in this repo. Generate the following files:
+const ICON_THEME_PROMPT = `Create a Repolith file icon theme in this repo. Generate the following files:
 
 1. \`repolith-extension.json\` (at repo root) — the manifest:
 {
