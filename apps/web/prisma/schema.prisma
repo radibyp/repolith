@@ -407,15 +407,15 @@ model PrOverviewAnalysis {
   @@map("pr_overview_analysis")
 }
 
-model MarketplaceExtension {
-  id              String                 @id @default(cuid())
-  slug            String                 @unique
+model CustomTheme {
+  id              String  @id @default(cuid())
+  slug            String  @unique
   owner           String
   repo            String
   name            String
   description     String
   type            String
-  version         String                 @default("1.0.0")
+  version         String  @default("1.0.0")
   manifestJson    String
   dataJson        String?
   readmeHtml      String?
@@ -424,13 +424,14 @@ model MarketplaceExtension {
   authorGithubId  String
   authorName      String
   authorAvatarUrl String?
-  downloads       Int                    @default(0)
-  verified        Boolean                @default(false)
-  featured        Boolean                @default(false)
+  downloads       Int     @default(0)
+  verified        Boolean @default(false)
+  featured        Boolean @default(false)
   publishedAt     String
   updatedAt       String
   dataCachedAt    String?
-  installs        UserExtensionInstall[]
+
+  installs UserThemeInstall[]
 
   @@unique([owner, repo])
   @@index([type])
@@ -438,13 +439,14 @@ model MarketplaceExtension {
   @@map("theme_store_extensions")
 }
 
-model UserExtensionInstall {
-  userId      String
-  extensionId String
-  installedAt String
-  extension   MarketplaceExtension @relation(fields: [extensionId], references: [id], onDelete: Cascade)
+model UserThemeInstall {
+  userId        String
+  customThemeId String  @map("extensionId")
+  installedAt   String
 
-  @@id([userId, extensionId])
+  customTheme CustomTheme @relation(fields: [customThemeId], references: [id], onDelete: Cascade)
+
+  @@id([userId, customThemeId])
   @@index([userId])
   @@map("user_theme_store_installs")
 }

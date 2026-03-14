@@ -1,7 +1,5 @@
 // ── PR Events ─────────────────────────────────────────────────
 
-import { markPRReadyForReview } from "@/app/(app)/repos/[owner]/[repo]/pulls/pr-actions";
-
 export type PRMergedEvent = {
 	type: "pr:merged";
 	owner: string;
@@ -208,6 +206,17 @@ export type PinRemovedEvent = {
 	url: string;
 };
 
+// ── Custom Theme Events ───────────────────────────────────────
+
+export type CustomThemeInstalledEvent = {
+	type: "customTheme:installed";
+	themeType: "theme" | "icon-theme";
+};
+export type CustomThemeUninstalledEvent = {
+	type: "customTheme:uninstalled";
+	themeType: "theme" | "icon-theme";
+};
+
 // ── Settings Events ───────────────────────────────────────────
 
 export type SettingsOpenEvent = { type: "settings:open"; tab?: string };
@@ -265,6 +274,8 @@ export type MutationEvent =
 	| GitHubAccountAddedEvent
 	| GitHubAccountRemovedEvent
 	| GitHubAccountSwitchedEvent
+	| CustomThemeInstalledEvent
+	| CustomThemeUninstalledEvent
 	| NotificationReadEvent
 	| NotificationAllReadEvent;
 
