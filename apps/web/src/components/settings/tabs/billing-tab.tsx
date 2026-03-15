@@ -65,8 +65,8 @@ function formatUsd(amount: number): string {
 
 function formatCredits(amount: number): string {
 	return new Intl.NumberFormat("en-US", {
-		maximumFractionDigits: 4,
-		minimumFractionDigits: 0,
+		maximumFractionDigits: 0,
+		minimumFractionDigits: 2,
 	}).format(amount);
 }
 
